@@ -1,0 +1,2351 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --ink: #1b2430;
+    --ink-soft: #5b6672;
+    --line: #dfe4e9;
+    --accent: #3d5a80;
+    --accent-dark: #2c4363;
+    --available: #0f7173;
+    --available-bg: #e3f3f2;
+    --unavailable: #b3555b;
+    --unavailable-bg: #f7e9ea;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+
+  #app {
+    display: flex;
+    height: 100vh;
+    min-height: 560px;
+  }
+
+  #sidebar {
+    width: 380px;
+    min-width: 320px;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header h1 {
+    margin: 0 0 2px;
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  #search-box {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #filter-bar {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dropdown-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dropdown-label {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+  }
+
+  #classification-select, #capacity-filter, #search-mode-select {
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #fff;
+    cursor: pointer;
+  }
+
+  #classification-select:focus, #capacity-filter:focus, #search-mode-select:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  #search-mode-field {
+    padding: 12px 20px 0;
+  }
+
+  .multi-dropdown {
+    position: relative;
+  }
+
+  .multi-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .multi-dropdown-btn:hover { border-color: var(--accent); }
+  .multi-dropdown-btn.has-selection { border-color: var(--accent); color: var(--accent-dark); font-weight: 600; }
+
+  .multi-dropdown-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    padding: 8px 4px;
+    z-index: 50;
+  }
+
+  .multi-dropdown-panel.open { display: block; }
+
+  .multi-dropdown-panel label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    border-radius: 5px;
+  }
+
+  .multi-dropdown-panel label:hover { background: #f4f6f8; }
+
+  #route-box {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fafbfc;
+  }
+
+  #route-box-label {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  #route-input {
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--sans);
+    color: var(--ink);
+    outline: none;
+    resize: vertical;
+  }
+
+  #route-input:focus { border-color: var(--accent); }
+
+  #schedule-box {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #schedule-box-label {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  #schedule-box-hint {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+
+  #schedule-file-input {
+    font-size: 12px;
+    font-family: var(--sans);
+  }
+
+  #schedule-status {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  #schedule-status.error { color: var(--unavailable); }
+
+  .schedule-date-header {
+    padding: 10px 20px 4px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    background: #f4f6f8;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .schedule-date-total {
+    font-weight: 400;
+    color: var(--ink-soft);
+    font-size: 11px;
+  }
+
+  .schedule-stop-card {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .schedule-stop-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .schedule-stop-leg {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+  }
+
+  .schedule-suggestion {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: #f4f6f8;
+    border-radius: 6px;
+    font-size: 11.5px;
+  }
+
+  .schedule-suggestion + .schedule-suggestion { margin-top: 4px; }
+
+  .schedule-suggestion .s-rank {
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-right: 4px;
+  }
+
+  #address-input, #route-input {
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: var(--sans);
+    color: var(--ink);
+    outline: none;
+  }
+
+  #address-input:focus { border-color: var(--accent); }
+
+  .tech-notes {
+    font-size: 11px;
+    color: #97650f;
+    background: #fdf3e3;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-top: 4px;
+  }
+
+  .tech-phone {
+    font-size: 11.5px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .tech-phone:hover { text-decoration: underline; }
+
+  .copy-btn {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--available); color: var(--available); }
+
+  .route-stop-dist {
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  .btn-primary:disabled {
+    background: #a8b6c4;
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  #refresh-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  #status-line {
+    padding: 10px 20px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    display: none;
+  }
+
+  #status-line.visible { display: block; }
+
+  #status-line.error { color: var(--unavailable); }
+
+  #territory-legend-toggle {
+    padding: 6px 20px;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  #territory-legend-toggle:hover { color: var(--accent); }
+
+  #territory-legend {
+    display: none;
+    padding: 8px 20px;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    line-height: 1.8;
+  }
+
+  #territory-legend.open { display: block; }
+
+  #territory-legend .zone-badge {
+    padding: 1px 6px;
+    margin-top: 0;
+    font-size: 10px;
+  }
+
+  #tech-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .tech-card {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tech-card:hover { background: #f8f9fb; }
+
+  .tech-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .tech-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tech-distance {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .tech-address {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .tech-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2px;
+  }
+
+  .tech-skills {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+
+  .badge.available {
+    background: var(--available-bg);
+    color: var(--available);
+  }
+
+  .badge.unavailable {
+    background: var(--unavailable-bg);
+    color: var(--unavailable);
+  }
+
+  .tech-territory {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  .zone-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+
+  .zone-badge.zone-primary { background: var(--available-bg); color: var(--available); }
+  .zone-badge.zone-secondary { background: #fdf3e3; color: #97650f; }
+  .zone-badge.zone-outside { background: var(--unavailable-bg); color: var(--unavailable); }
+
+  .skill-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 1px 7px;
+    border-radius: 100px;
+    background: #eef1f4;
+    color: var(--ink-soft);
+    margin: 2px 4px 0 0;
+  }
+
+  .skill-tag.classification {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .skill-tag.classification.tag-1099 {
+    background: #e6ecf3;
+    color: var(--accent-dark);
+  }
+
+  .skill-tag.classification.tag-w2 {
+    background: #f0e6f7;
+    color: #6b3fa0;
+  }
+
+  #empty-state {
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  #map-container {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+    background: #e9ecef;
+  }
+
+  #selected-tech-panel {
+    display: none;
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1000;
+    width: 300px;
+    max-height: calc(100% - 28px);
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    border: 1px solid var(--line);
+  }
+
+  #selected-tech-panel.open { display: block; }
+
+  #selected-tech-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--ink-soft);
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  #selected-tech-close:hover { color: var(--ink); }
+
+  #selected-tech-body { padding: 16px; }
+
+  #selected-tech-body .st-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
+    padding-right: 20px;
+  }
+
+  #selected-tech-body .st-row {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  #selected-tech-body .st-section-title {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 10px 0 4px;
+  }
+
+  #selected-tech-body a { color: var(--accent); text-decoration: none; }
+  #selected-tech-body a:hover { text-decoration: underline; }
+
+  .tech-card.selected-card {
+    background: #eef4f8;
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  #map-key-panel {
+    width: 240px;
+    flex-shrink: 0;
+    background: #1b2430;
+    color: #e8ebee;
+    font-family: var(--sans);
+    overflow-y: auto;
+    border-left: 1px solid #10161f;
+  }
+
+  #map-key-panel.collapsed {
+    width: 44px;
+  }
+
+  #map-key-panel.collapsed #map-key-header span {
+    display: none;
+  }
+
+  #map-key-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #10161f;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    position: sticky;
+    top: 0;
+  }
+
+  #map-key-collapse {
+    background: none;
+    border: none;
+    color: #9aa5b1;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  #map-key-collapse:hover { color: #fff; }
+
+  #map-key-body {
+    padding: 12px;
+    max-height: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #map-key-panel.collapsed #map-key-body { display: none; }
+
+  #map-key-select-label {
+    font-size: 10.5px;
+    color: #9aa5b1;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  #group-by-select {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #33404f;
+    background: #232d3a;
+    color: #e8ebee;
+    font-size: 12.5px;
+    font-family: var(--sans);
+  }
+
+  #map-key-showall-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    color: #9aa5b1;
+    padding-top: 2px;
+    border-top: 1px solid #2c3644;
+  }
+
+  #map-key-showall {
+    background: none;
+    border: none;
+    color: #6fb3c9;
+    font-size: 10.5px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  #map-key-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 4px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .legend-row:hover { background: #232d3a; }
+
+  .legend-row .legend-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.4);
+  }
+
+  .legend-row.hidden-group { opacity: 0.4; }
+  .legend-row.hidden-group .legend-dot { background: transparent !important; }
+
+  .legend-row .legend-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .legend-row .legend-count {
+    color: #9aa5b1;
+    font-size: 10.5px;
+  }
+
+  .leaflet-popup-content { font-family: var(--sans); font-size: 13px; }
+
+  .leaflet-control-attribution {
+    font-size: 9px;
+    padding: 1px 4px;
+    background: rgba(255,255,255,0.6);
+    color: #99a0a8;
+  }
+  .leaflet-control-attribution a { color: #99a0a8; }
+  .leaflet-popup-content b { display: block; margin-bottom: 2px; }
+
+  .territory-label {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    box-shadow: none;
+  }
+  .territory-label::before { display: none; }
+  .territory-label.secondary {
+    font-weight: 500;
+    font-size: 10px;
+    color: var(--ink-soft);
+    opacity: 0.9;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #unmapped-section {
+    border-top: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  #unmapped-toggle {
+    padding: 10px 20px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  #unmapped-toggle:hover { color: var(--accent); }
+
+  #unmapped-list {
+    display: none;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 0 20px 10px;
+  }
+
+  #unmapped-list.open { display: block; }
+
+  .unmapped-item {
+    padding: 6px 0;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+  }
+
+  .unmapped-item .u-name { font-weight: 600; }
+  .unmapped-item .u-note { color: var(--ink-soft); font-size: 11px; }
+
+  @media (max-width: 760px) {
+    #app { flex-direction: column; }
+    #sidebar { width: 100%; height: 45%; border-right: none; border-bottom: 1px solid var(--line); }
+    #map-container { height: 35%; width: 100%; }
+    #map-key-panel { width: 100%; height: 20%; border-left: none; border-top: 1px solid #10161f; }
+    #map-key-body { max-height: 140px; }
+  }
+</style>
+
+<div id="app">
+  <div id="sidebar">
+    <header>
+      <h1>Technician Finder</h1>
+      <p>Active roster &amp; territory, pulled from Confluence</p>
+    </header>
+
+    <div id="filter-bar">
+      <div class="dropdown-field">
+        <label class="dropdown-label">Technician type</label>
+        <select id="classification-select">
+          <option value="all">All (1099 &amp; W2)</option>
+          <option value="1099">1099 only</option>
+          <option value="W2">W2 only</option>
+        </select>
+      </div>
+
+      <div class="dropdown-field">
+        <label class="dropdown-label">Skills / capabilities</label>
+        <div class="multi-dropdown" id="skills-dropdown">
+          <button type="button" id="skills-dropdown-btn" class="multi-dropdown-btn">Any skill &#9662;</button>
+          <div id="skills-dropdown-panel" class="multi-dropdown-panel">
+            <label><input type="checkbox" value="electrical" /> Electrical</label>
+            <label><input type="checkbox" value="helper" /> Helper</label>
+            <label><input type="checkbox" value="cable pull" /> Cable pull</label>
+            <label><input type="checkbox" value="van" /> Van/truck</label>
+            <label><input type="checkbox" value="va-cleared" /> VA-cleared</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-field">
+        <label class="dropdown-label">Daily capacity</label>
+        <select id="capacity-filter">
+          <option value="0">Any daily capacity</option>
+          <option value="2">2+ SA/day</option>
+          <option value="4">4+ SA/day</option>
+          <option value="6">6+ SA/day</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="search-mode-field" class="dropdown-field">
+      <label class="dropdown-label">Search by</label>
+      <select id="search-mode-select">
+        <option value="address">Address</option>
+        <option value="name">Technician name</option>
+        <option value="route">Multi-stop route</option>
+      </select>
+    </div>
+
+    <div id="search-box">
+      <input id="address-input" type="text" placeholder="Search by address or technician name, e.g. Tampa FL or Jim Morris" />
+      <button id="search-btn" class="btn btn-primary">Find nearby technicians</button>
+    </div>
+
+    <div id="route-box">
+      <div id="route-box-label">Multi-stop route — paste each job address on its own line</div>
+      <textarea id="route-input" rows="3" placeholder="123 Main St, Tampa FL&#10;45 Oak Ave, Orlando FL&#10;9 Pine Rd, Lakeland FL"></textarea>
+      <button id="route-search-btn" class="btn btn-primary">Find technician for route</button>
+    </div>
+
+    <div id="schedule-box">
+      <div id="schedule-box-label">Upload a job schedule (CSV or Excel)</div>
+      <div id="schedule-box-hint">Needs a date column and an address column — headers can be named anything containing "date" / "address".</div>
+      <input type="file" id="schedule-file-input" accept=".csv,.xlsx,.xls" />
+      <div id="schedule-status"></div>
+      <button id="schedule-clear-btn" class="btn-ghost btn" style="display:none;">Clear schedule &amp; return to search</button>
+    </div>
+
+    <div id="refresh-row">
+      <span id="last-synced">Loading saved data…</span>
+    </div>
+
+    <div id="status-line"></div>
+
+    <div id="territory-legend-toggle">Legend: primary/secondary territory &amp; map dots &#9662;</div>
+    <div id="territory-legend">
+      <span class="zone-badge zone-primary">Primary</span> &le; 60 min from home, reliable
+      &nbsp;&middot;&nbsp;
+      <span class="zone-badge zone-secondary">Secondary</span> travels there, trip fee likely
+      <br/>
+      Map dots: thick purple ring = W2 employee &middot; thin ring = 1099 contractor
+    </div>
+
+    <div id="tech-list">
+      <div id="empty-state">
+        Loading technicians…
+      </div>
+    </div>
+
+    <div id="unmapped-section">
+      <div id="unmapped-toggle">Known but not mappable (<span id="unmapped-count">0</span>) — no address on file</div>
+      <div id="unmapped-list"></div>
+    </div>
+  </div>
+
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="selected-tech-panel">
+      <button id="selected-tech-close" type="button" title="Close">&times;</button>
+      <div id="selected-tech-body"></div>
+    </div>
+  </div>
+
+  <div id="map-key-panel">
+    <div id="map-key-header">
+      <span>GROUPING / COLORED PINS</span>
+      <button id="map-key-collapse" type="button" title="Collapse">&minus;</button>
+    </div>
+    <div id="map-key-body">
+      <label id="map-key-select-label">Color-code map pins by</label>
+      <select id="group-by-select">
+        <option value="status">Status (Active / Inactive)</option>
+        <option value="classification">Classification (1099 / W2)</option>
+        <option value="fqc">Field Quality Coordinator</option>
+        <option value="state">State</option>
+        <option value="capacity">Daily Capacity</option>
+      </select>
+      <div id="map-key-showall-row">
+        <span id="map-key-count"></span>
+        <button id="map-key-showall" type="button">Show all</button>
+      </div>
+      <div id="map-key-legend"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Snapshot pulled from Confluence (TSKB space, "Technician Facebook" + its 24 detail
+// sub-pages) on 2026-09-16. Coordinates are baked in (city-level accuracy) so this file
+// works fully offline with zero network calls for the technician roster.
+// Use the Refresh button to re-pull live from Confluence and update this list.
+const EMBEDDED_TECHNICIANS = [
+  { name: "Anthony Mathews", address: "5033 JR Court, Royse City, TX 75189", territory: "Dallas, TX & greater metro", skills: ["Helper","Cable pull","Van/truck","VA-cleared","Orange installs","3-4 SA/tech/day"], available: true, lat: 32.9748, lon: -96.3286 },
+  { name: "James Mathews", address: "401 Laurel Lane, Fate, TX 75087", territory: "Dallas, TX & greater metro", skills: ["Helper","Cable pull","Van/truck","VA-cleared","Orange installs","3-4 SA/tech/day"], available: true, lat: 32.9351, lon: -96.3808 },
+  { name: "Cameron Reese", address: "713 Banner Avenue, Royse City, TX 75189", territory: "Dallas, TX & greater metro", skills: ["INACTIVE - do not dispatch"], available: false, lat: 32.9748, lon: -96.3286 },
+  { name: "Arluster Johnson", address: "4905 Mondell Rd, Las Vegas, NV 89130", territory: "Las Vegas, NV", skills: ["Electrical (outlet relocations)","Helper (on request)","Cable pull","Van/truck","3-4 SA/day"], available: true, lat: 36.2456, lon: -115.1728 },
+  { name: "Bill Raymond", address: "1105 Wigeon Dr, Conway, SC 29526", territory: "Myrtle Beach, SC", skills: ["VA-cleared","Willing: Orange installs","2 SA/day"], available: true, lat: 33.8360, lon: -79.0658 },
+  { name: "Carl McGuire", address: "8497 Deer Haven Drive, Pinon Hills, CA 92372", territory: "Riverside, CA", skills: ["Helper (busy season)","Van/truck","5-6 SA/day"], available: true, lat: 34.3811, lon: -117.6503 },
+  { name: "Clyde Barbour", address: "18544 W 153rd Terrace, Olathe, KS 66062", territory: "Kansas City, KS / Wichita, KS", skills: ["Helper","Cable pull","Van/truck","VA-cleared","Orange installs","4-5 SA/day"], available: true, lat: 38.8014, lon: -94.8955 },
+  { name: "James Cain", address: "409 S 76th Ter, Kansas City, KS 66111", territory: "Kansas City, KS / Wichita, KS", skills: ["Helper","Cable pull","Van/truck","VA-cleared","Orange installs","4-5 SA/day"], available: true, lat: 39.1460, lon: -94.7550 },
+  { name: "Daren Pelletier", address: "6303 Sable Lane, Greensboro, NC 27406", territory: "Greensboro, NC", skills: ["VA-cleared","4 SA/day (5 devices/job)"], available: true, lat: 36.0453, lon: -79.8231 },
+  { name: "Don Collingham", address: "12165 West Keates Drive, Boise, ID 83709", territory: "Boise, ID", skills: ["Cable pull","Van/truck","Moderate orange exp.","2-3 SA/day"], available: true, lat: 43.5760, lon: -116.3054 },
+  { name: "Eduardo Rodriguez", address: "10918 Moonlit Fields Ct, Houston, TX 77064", territory: "Houston, TX", skills: ["Electrical","Helper","Cable pull","Van/truck","VA-cleared","Orange installs","4-5 SA/tech (2 techs)"], available: true, lat: 29.9424, lon: -95.5825 },
+  { name: "Oscar Castillo", address: "4250 W 34th St Apt 10, Houston, TX 77092", territory: "Houston, TX", skills: ["Electrical","Helper","Cable pull","Van/truck","VA-cleared","Orange installs","4-5 SA/tech (2 techs)"], available: true, lat: 29.8283, lon: -95.4849 },
+  { name: "Diego Gastaminza", address: "15596 I-45 South Apt 2501, Conroe, TX 77384", territory: "Houston, TX", skills: ["INACTIVE - do not dispatch"], available: false, lat: 30.2210, lon: -95.4700 },
+  { name: "Fran Killian", address: "378 Gibson Street, Canandaigua, NY 14424", territory: "Rochester, NY (Upstate NY)", skills: ["Helper (as needed)","Cable pull","Small van","8-10 hr/day"], available: true, lat: 42.8814, lon: -77.2811 },
+  { name: "Jim Call", address: "109 Dawson Stinson Rd, Greenville, GA 30222", territory: "LaGrange / Atlanta / Macon / Columbus, GA", skills: ["Helper","Cable pull","Van/truck","6-7 SA/day"], available: true, lat: 33.0243, lon: -84.7099 },
+  { name: "Jim Morris", address: "8308 Sandstone Court, Tampa, FL 33615", territory: "Tampa, FL (Lakeland, Sarasota, Sebring, Spring Hill, Orlando)", skills: ["Helper","Cable pull","Van/truck","VA-cleared","4-5 SA/day"], available: true, lat: 27.9989, lon: -82.5779 },
+  { name: "Joe Valente", address: "3654 Aquarina Street, Waterford, MI 48329", territory: "Detroit, MI", skills: ["Helper (as needed)","Cable pull","Van/truck","8-10 hr/day"], available: true, lat: 42.6870, lon: -83.3963 },
+  { name: "Joseph Brown", address: "2063 Jericho Rd, Maryville, TN 37803", territory: "Knoxville, TN (Nashville, Chattanooga, Huntsville, more)", skills: ["Cable pull","Van/truck","VA-cleared","Orange installs","4-5 SA/day"], available: true, lat: 35.7565, lon: -83.9705 },
+  { name: "Joseph Monfredo", address: "629 N Woodward Dr, Essex, MD 21221", territory: "Baltimore, MD (DC, Philly, Harrisburg, Salisbury, more)", skills: ["Helper","Cable pull","Van/truck","VA-cleared","Willing: Orange installs","4-5 SA/tech"], available: true, lat: 39.3068, lon: -76.4655 },
+  { name: "Matt Graves", address: "629 N Woodward Dr, Essex, MD 21221", territory: "Baltimore, MD (worker tech)", skills: ["Part of Monfredo team"], available: true, lat: 39.3068, lon: -76.4655 },
+  { name: "Harvey Wofford", address: "629 N Woodward Dr, Essex, MD 21221", territory: "Baltimore, MD (worker tech)", skills: ["Part of Monfredo team"], available: true, lat: 39.3068, lon: -76.4655 },
+  { name: "Charles Reaves", address: "629 N Woodward Dr, Essex, MD 21221", territory: "Baltimore, MD (worker tech)", skills: ["Part of Monfredo team"], available: true, lat: 39.3068, lon: -76.4655 },
+  { name: "Julian Aldama", address: "55 Rolling Sands Dr, Palm Coast, FL 32164", territory: "Miami, FL", skills: ["Helper","Cable pull","Van/truck","3-4 SA/day","Managing tech"], available: true, lat: 29.4977, lon: -81.2626 },
+  { name: "Alexander Aldama", address: "15830 SW 53rd Ter, Miami, FL 33185", territory: "Miami, FL", skills: ["Contract holder - do not assign SAs directly"], available: true, lat: 25.7096, lon: -80.4370 },
+  { name: "Kwami Pennick", address: "1271 Van Tassell Trl NE, Palm Bay, FL 32905", territory: "Miami, FL team", skills: ["Helper","Cable pull","Van/truck"], available: true, lat: 27.9995, lon: -80.6520 },
+  { name: "Derick Acosta", address: "3820 SW 139th Ave, Miami, FL 33175", territory: "Miami, FL team", skills: ["Helper","Cable pull","Van/truck"], available: true, lat: 25.7327, lon: -80.4111 },
+  { name: "Brian Morgan", address: "9703 NW 67th St, Tamarac, FL 33321", territory: "Miami, FL team", skills: ["Helper","Cable pull","Van/truck"], available: true, lat: 26.1898, lon: -80.2606 },
+  { name: "Mitchell Kiskaden", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "MI, MA, CT, RI, NYC & Lower NY, ME, NH, VT", skills: ["Helper","Cable pull","Van on request","VA-cleared","Managing tech","8-14 hr/day incl. drive"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Eyan Duncan", address: "3050 Helmsdale Pl Apt 8307, Lexington, KY 40509", territory: "MI, Fort Myers & Port St. Lucie FL", skills: ["Helper","Cable pull","Van on request","VA-cleared","Managing tech"], available: true, lat: 38.0623, lon: -84.4213 },
+  { name: "Ben Stricker", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "IN, OH, KY, Western WV", skills: ["Helper","Cable pull","Van on request","Managing tech"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Dennis Hill", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "Contract holder, part-time tech", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Charlie Ohe", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "OH, IN, KY, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Matthew O'Pry", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "OH, IN, KY, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Steven Brockman", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "OH, IN, KY, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Scott Meyer", address: "1050 Arbor Tech Drive Suite D, Hebron, KY 41048", territory: "OH, IN, KY, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.0620, lon: -84.7024 },
+  { name: "Bryhton Beach", address: "445 Flint Rd, Waco, KY 40385", territory: "KY, Southern IN, Southern OH, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 37.4970, lon: -84.1930 },
+  { name: "Mark Maze", address: "17051 Duck Creek Road, Laurel, IN 47024", territory: "KY, Southern IN, Southern OH, Western WV", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.4970, lon: -85.1770 },
+  { name: "Dean Schaedler", address: "Columbus, OH", territory: "Columbus, OH (Nexgen team, backs up Nate Williams/Roxy Sheets in Cleveland/Youngstown when booked)", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 39.9612, lon: -82.9988 },
+  { name: "Radoslaw Gawrys", address: "20 Silver St, West Babylon, NY 11704", territory: "NYC (Yonkers, Bronx, Brooklyn, Staten Island, Long Island)", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 40.7104, lon: -73.3773 },
+  { name: "Sebastian Montano", address: "6016 83rd Place Apt 2F, Middle Village, NY 11379", territory: "NYC & all of New Jersey", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 40.7176, lon: -73.8815 },
+  { name: "Ruben Acosta", address: "106 Burgher Avenue, Staten Island, NY 10304", territory: "NYC & all of New Jersey", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 40.6110, lon: -74.0827 },
+  { name: "Jermael Lessey", address: "1021 Bear Tavern Rd, Ewing, NJ 08628", territory: "NJ & NYC", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 40.2818, lon: -74.8244 },
+  { name: "James Pellette", address: "26 Pearl St, Norwalk, CT 06850", territory: "CT, RI, Albany NY to NYC, MA", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 41.1177, lon: -73.4082 },
+  { name: "Paul Carlson", address: "26 North St Apt 404, Douglas, MA 01516", territory: "MA & RI", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 42.0562, lon: -71.7434 },
+  { name: "Eric Pulleyblank", address: "1715 Barrit St, Lansing, MI 48912", territory: "MI, Northern OH, Northern IN", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 42.7215, lon: -84.5354 },
+  { name: "Eric Pulleyblank (Green Badge)", address: "9173 S. Saginaw, Grand Blanc, MI 48439", territory: "MI, Northern OH, Northern IN", skills: ["Green Security Badge clearance","Helper","Cable pull"], available: true, lat: 42.9267, lon: -83.6363 },
+  { name: "Kyle Williams", address: "813 Troy Ave S, Lehigh Acres, FL 33974", territory: "Central FL: Ft. Myers, Sebring, Sarasota, Port St. Lucie", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 26.6256, lon: -81.6270 },
+  { name: "Mac Kearney", address: "4144 71st Ct N, West Palm Beach, FL 33404", territory: "Central FL: Ft. Myers, Sebring, Sarasota, Port St. Lucie", skills: ["Helper","Cable pull","Van on request"], available: true, lat: 26.7620, lon: -80.0770 },
+  { name: "Nate Williams", address: "16208 ST RT 62, Damascus, OH 44619", territory: "Canton/Youngstown/Cleveland/Akron OH to NW Pittsburgh PA", skills: ["Helper (as needed)","Cable pull","Van (with notice)","VA-cleared","8-10 hr/day"], available: true, lat: 40.8734, lon: -81.0968 },
+  { name: "Roxy Sheets", address: "16208 US-62, Damascus, OH 44619", territory: "Canton/Youngstown/Cleveland/Akron OH to NW Pittsburgh PA", skills: ["Part of Nate Williams team"], available: true, lat: 40.8734, lon: -81.0968 },
+  { name: "Pete Zimmerman", address: "42 Brookside Ln, Bristol, IL 60512", territory: "Chicago, IL", skills: ["Helper (as needed)","Cable pull","Van/truck","VA-cleared","8-10 hr/day"], available: true, lat: 41.6497, lon: -88.4287 },
+  { name: "Roger Martinez", address: "1925 Old FM 306 Apt 17314, New Braunfels, TX 78130", territory: "San Antonio, TX", skills: ["Cable pull","Familiar: Orange installs","3-4 SA/day"], available: true, lat: 29.7030, lon: -98.1245 },
+  { name: "Ron Janz", address: "3215 S. 95th Street, Milwaukee, WI 53227", territory: "Milwaukee, WI", skills: ["Helper (as needed)","Cable pull","Small van","8 hr/day"], available: true, lat: 42.9789, lon: -88.0398 },
+  { name: "Samer Al Kattan", address: "65 Knollwood Cir, Savannah, GA 31419", territory: "Savannah, GA", skills: ["Helper","Van/truck","Willing: Orange installs","2-3 SA/day (100mi limit)"], available: true, lat: 31.9932, lon: -81.2523 },
+  { name: "Shannon Cullifer", address: "806 Loop Ave Ste. A #124, Bainbridge, GA 39819", territory: "Bainbridge, GA (Dothan, Valdosta, Panama City, Tallahassee, Mobile, Albany)", skills: ["Helper","Van/truck","VA-cleared","Willing: Orange installs","3-4 SA/day"], available: true, lat: 30.9036, lon: -84.5738 },
+  { name: "Terry Fedder", address: "11935 NW 11th Place, Gainesville, FL 32606", territory: "Gainesville, FL (Ocala, Jacksonville)", skills: ["Electrical (notice+helper)","Helper","Cable pull","Van/truck","Willing: Orange installs","3-7 SA/day"], available: true, lat: 29.6982, lon: -82.4187 },
+  { name: "Warren Zukina", address: "953 N. 11th Street, Reading, PA 19604", territory: "Reading PA area (Allentown, W. Chester, N/NW/W Philadelphia, Mechanicsburg)", skills: ["Helper (as needed)","Cable pull","Van on request","8-10 hr/day"], available: true, lat: 40.3576, lon: -75.9179 }
+];
+
+// Everyone in this directory is confirmed 1099 (independent contractor) status per the
+// "1099 Contact & FQC Information" reference sheet — there are zero W2 employees in this roster.
+EMBEDDED_TECHNICIANS.forEach(t => { t.skills = ['1099', ...t.skills]; });
+
+// Primary-territory coverage radius (miles), pulled from explicit language on each
+// Confluence page where stated (e.g. Ron Janz's "45 minute radius", the Nexgen team's
+// explicit "60-Mile Radius from City Center", Samer Al Kattan's "100 miles from Savannah").
+// Everyone else defaults to 50mi as a reasonable metro-area estimate — their pages describe
+// primary territory as a list of nearby cities rather than a stated radius.
+const RADIUS_OVERRIDES_MI = {
+  "Ron Janz": 30,               // "45 minute radius" of home/business address
+  "Warren Zukina": 45,          // "1 hour radius from Reading, PA"
+  "Nate Williams": 45,          // "Up to 1 hour Radius of Damascus, OH"
+  "Roxy Sheets": 45,
+  "Samer Al Kattan": 60,        // Georgia territory guide: "will not travel more than 60 miles from home ZIP" (his own page mentions a 100mi ceiling only as a with-notice exception)
+  "Jim Call": 65,               // Primary zones span LaGrange/Atlanta/Macon/Columbus, GA
+  "Joseph Brown": 85,           // Wide secondary list (Nashville, Chattanooga, Asheville, etc.)
+  "Joseph Monfredo": 85, "Matt Graves": 85, "Harvey Wofford": 85, "Charles Reaves": 85,
+  "Clyde Barbour": 90, "James Cain": 90,   // Wide multi-state secondary territory
+  "Shannon Cullifer": 95,       // Mentions traveling 3-4 hours one way to outer territory
+  // Nexgen team: page explicitly states "Primary Territory (60-Mile Radius from City Center)"
+  "Mitchell Kiskaden": 60, "Eyan Duncan": 60, "Ben Stricker": 60, "Dennis Hill": 60,
+  "Charlie Ohe": 60, "Matthew O'Pry": 60, "Steven Brockman": 60, "Scott Meyer": 60,
+  "Bryhton Beach": 60, "Mark Maze": 60, "Radoslaw Gawrys": 60, "Sebastian Montano": 60,
+  "Ruben Acosta": 60, "Jermael Lessey": 60, "James Pellette": 60, "Paul Carlson": 60,
+  "Eric Pulleyblank": 60, "Eric Pulleyblank (Green Badge)": 60, "Kyle Williams": 60, "Mac Kearney": 60
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.radiusMiles = RADIUS_OVERRIDES_MI[t.name] || 50; });
+
+// Phone numbers, from the "1099 Contact & FQC Information" sheet and each person's own detail page.
+const PHONE_NUMBERS = {
+  "Anthony Mathews": "951-265-9067", "James Mathews": "951-294-8221", "Cameron Reese": "469-975-9561",
+  "Arluster Johnson": "702-327-7121", "Bill Raymond": "484-639-1171", "Carl McGuire": "951-966-3040",
+  "Clyde Barbour": "816-304-0490", "James Cain": "816-263-1166", "Daren Pelletier": "336-210-5597",
+  "Don Collingham": "208-867-6270", "Eduardo Rodriguez": "281-898-4302", "Oscar Castillo": "281-788-0120",
+  "Diego Gastaminza": "720-375-5620", "Fran Killian": "585-233-0923", "Jim Call": "404-483-9473",
+  "Jim Morris": "813-476-2572", "Joe Valente": "586-219-4699", "Joseph Brown": "865-388-0414",
+  "Joseph Monfredo": "443-739-4775", "Matt Graves": "443-508-6775", "Harvey Wofford": "443-955-4094",
+  "Charles Reaves": "667-354-9691", "Julian Aldama": "305-240-1370", "Alexander Aldama": "305-240-0903",
+  "Kwami Pennick": "321-586-6300", "Derick Acosta": "305-905-1605", "Brian Morgan": "954-859-7448",
+  "Mitchell Kiskaden": "859-801-9875", "Eyan Duncan": "859-552-2077", "Ben Stricker": "859-240-3690",
+  "Dennis Hill": "606-782-5369", "Charlie Ohe": "513-520-8532", "Matthew O'Pry": "513-787-8811",
+  "Steven Brockman": "859-206-9091", "Scott Meyer": "859-414-2648", "Bryhton Beach": "606-359-9465",
+  "Mark Maze": "812-290-3980", "Radoslaw Gawrys": "631-525-2412", "Sebastian Montano": "347-646-0459",
+  "Ruben Acosta": "347-330-8011", "Jermael Lessey": "201-469-7310", "James Pellette": "716-818-4289",
+  "Paul Carlson": "508-364-0442", "Eric Pulleyblank": "248-825-1429",
+  "Eric Pulleyblank (Green Badge)": "810-869-1316", "Kyle Williams": "239-297-2224",
+  "Mac Kearney": "561-723-3602", "Nate Williams": "330-510-1128", "Roxy Sheets": "724-261-7929",
+  "Pete Zimmerman": "630-301-0931", "Roger Martinez": "830-643-9315", "Ron Janz": "414-303-2298",
+  "Samer Al Kattan": "760-212-1048", "Shannon Cullifer": "229-416-6014", "Terry Fedder": "352-262-2727",
+  "Warren Zukina": "484-269-4276"
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.phone = PHONE_NUMBERS[t.name] || null; });
+
+// Email addresses, from the same "1099 Contact & FQC Information" sheet and individual pages.
+const EMAIL_ADDRESSES = {
+  "Anthony Mathews": "anthony@dataim.info", "James Mathews": "james@dataim.info",
+  "Cameron Reese": "creese983@gmail.com", "Arluster Johnson": "abjohnson41@gmail.com",
+  "Bill Raymond": "bill@vh360smarthome.com", "Carl McGuire": "birdonawire53@msn.com",
+  "Clyde Barbour": "barbourclyde@gmail.com", "James Cain": "jamesbcain2001@gmail.com",
+  "Daren Pelletier": "darenpelletier@gmail.com", "Don Collingham": "obssd1958@yahoo.com",
+  "Eduardo Rodriguez": "ah458herotech@gmail.com", "Oscar Castillo": "oscarcastillohtc@gmail.com",
+  "Diego Gastaminza": "diego.hrt23@gmail.com", "Fran Killian": "fkillian@rochester.rr.com",
+  "Jim Call": "atlantalogistics@gmail.com", "Jim Morris": "ironcityjim@gmail.com",
+  "Joe Valente": "josephjvalente@outlook.com", "Joseph Brown": "joe.tech.brown@gmail.com",
+  "Joseph Monfredo": "joemonfredo@gmail.com", "Matt Graves": "msgraves92@gmail.com",
+  "Harvey Wofford": "harveyww2ndfb@gmail.com", "Charles Reaves": "reaves.charles@gmail.com",
+  "Julian Aldama": "jaldama@nas4.com", "Alexander Aldama": "aaldama@nas4.com",
+  "Kwami Pennick": "inkpenllc@gmail.com", "Derick Acosta": "derickacosta0912@gmail.com",
+  "Brian Morgan": "bdmorgy@gmail.com", "Mitchell Kiskaden": "mrkiskaden@gmail.com",
+  "Eyan Duncan": "eyanduncan@yahoo.com", "Ben Stricker": "sales@benwrapped.com",
+  "Dennis Hill": "dnnshll4@gmail.com", "Charlie Ohe": "cohe82980@gmail.com",
+  "Matthew O'Pry": "mjopry@protonmail.com", "Steven Brockman": "s.brockman14@yahoo.com",
+  "Scott Meyer": "scottmeyer83@gmail.com", "Bryhton Beach": "beach.bryhton22@gmail.com",
+  "Mark Maze": "markamaze1999@yahoo.com", "Radoslaw Gawrys": "rad20@hotmail.com",
+  "Sebastian Montano": "sebas11416@gmail.com", "Ruben Acosta": "ruac8791@gmail.com",
+  "Jermael Lessey": "jermaellessey22@gmail.com", "James Pellette": "jpellette74@gmail.com",
+  "Paul Carlson": "phcarlson@live.com", "Eric Pulleyblank": "voxeleyes@gmail.com",
+  "Eric Pulleyblank (Green Badge)": "patrickjlipe@hotmail.com", "Kyle Williams": "mikewillpg24@gmail.com",
+  "Mac Kearney": "mac@jupitertechhelp.com", "Nate Williams": "zaxanllc@gmail.com",
+  "Roxy Sheets": "rsheets@zaxanllc.com", "Pete Zimmerman": "action-sat@comcast.net",
+  "Roger Martinez": "rogerm78130@gmail.com", "Ron Janz": "jtv@execpc.com",
+  "Samer Al Kattan": "samer.ssabri@gmail.com", "Shannon Cullifer": "shannontech@gmail.com",
+  "Terry Fedder": "terryg1959@yahoo.com", "Warren Zukina": "warrenzukina@gmail.com"
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.email = EMAIL_ADDRESSES[t.name] || null; });
+
+// Field Quality Coordinator assignment, from the "1099 Contact & FQC Information" sheet —
+// useful as a grouping dimension (who on the FQC team owns quality checks for this tech).
+const FQC_COORDINATORS = {
+  "Anthony Mathews": "Tom Post", "James Mathews": "Tom Post", "Cameron Reese": "Tom Post",
+  "Arluster Johnson": "Christina Anderson", "Bill Raymond": "Christina Anderson",
+  "Carl McGuire": "Christina Anderson", "Clyde Barbour": "Tom Post", "James Cain": "Tom Post",
+  "Daren Pelletier": "Sanya Klemme", "Don Collingham": "Tom Post",
+  "Eduardo Rodriguez": "Tom Post", "Oscar Castillo": "Tom Post", "Diego Gastaminza": "Tom Post",
+  "Fran Killian": "Christina Anderson", "Jim Call": "Christina Anderson", "Jim Morris": "Julie Spitznogle",
+  "Joseph Brown": "Christina Anderson", "Joseph Monfredo": "Sanya Klemme", "Matt Graves": "Sanya Klemme",
+  "Harvey Wofford": "Sanya Klemme", "Charles Reaves": "Sanya Klemme", "Joe Valente": "Julie Spitznogle",
+  "Julian Aldama": "Julie Spitznogle", "Alexander Aldama": "Julie Spitznogle",
+  "Kwami Pennick": "Julie Spitznogle", "Derick Acosta": "Julie Spitznogle", "Brian Morgan": "Julie Spitznogle",
+  "Mitchell Kiskaden": "Julie Spitznogle", "Eyan Duncan": "Julie Spitznogle", "Ben Stricker": "Julie Spitznogle",
+  "Dennis Hill": "Julie Spitznogle", "Charlie Ohe": "Julie Spitznogle", "Matthew O'Pry": "Julie Spitznogle",
+  "Steven Brockman": "Julie Spitznogle", "Scott Meyer": "Julie Spitznogle", "Bryhton Beach": "Julie Spitznogle",
+  "Mark Maze": "Julie Spitznogle", "Radoslaw Gawrys": "Julie Spitznogle", "Sebastian Montano": "Julie Spitznogle",
+  "Ruben Acosta": "Julie Spitznogle", "Jermael Lessey": "Julie Spitznogle", "James Pellette": "Julie Spitznogle",
+  "Paul Carlson": "Julie Spitznogle", "Eric Pulleyblank": "Julie Spitznogle",
+  "Eric Pulleyblank (Green Badge)": "Julie Spitznogle", "Kyle Williams": "Julie Spitznogle",
+  "Mac Kearney": "Julie Spitznogle", "Nate Williams": "Julie Spitznogle", "Roxy Sheets": "Julie Spitznogle",
+  "Pete Zimmerman": "Julie Spitznogle", "Roger Martinez": "Tom Post", "Ron Janz": "Julie Spitznogle",
+  "Samer Al Kattan": "Sanya Klemme", "Shannon Cullifer": "Sanya Klemme", "Terry Fedder": "Sanya Klemme",
+  "Warren Zukina": "Christina Anderson"
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.fqc = FQC_COORDINATORS[t.name] || null; });
+
+// Operationally important flags called out on individual Confluence pages.
+const TECH_NOTES = {
+  "Alexander Aldama": "Contract holder — do NOT assign SAs directly to him; dispatch to Julian Aldama or the team instead.",
+  "Samer Al Kattan": "Not available Fridays 1:00–2:30pm. Do not dispatch jobs >60mi from his zip within the Savannah territory (goes to Snap instead) — call him first for sensitive/new-install jobs.",
+  "Bill Raymond": "No equipment/capacity for multi-day jobs — must be completed in one day.",
+  "Cameron Reese": "INACTIVE — do not dispatch.",
+  "Diego Gastaminza": "INACTIVE — do not dispatch.",
+  "Jim Morris": "Alternate dispatch contact: David Stellato.",
+  "Fran Killian": "Lives near KORE Wireless (Pittsford, NY) — can pick up/drop off equipment there, saving shipping time.",
+  "Daren Pelletier": "Jobs outside his secondary zones are billed at $0.72/mile (or current IRS rate) travel, submitted via Technician Portal."
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.notes = TECH_NOTES[t.name] || null; });
+
+// Structured max SA/day capacity where the Confluence page states it as a device/appointment
+// count (used for filtering). Pages that state capacity in hours instead ("8-10 hr/day") are
+// left null here since that's a different unit and can't be compared numerically.
+const CAPACITY_PER_DAY = {
+  "Anthony Mathews": 4, "James Mathews": 4, "Arluster Johnson": 4, "Bill Raymond": 2, "Carl McGuire": 6,
+  "Clyde Barbour": 5, "James Cain": 5, "Daren Pelletier": 4, "Don Collingham": 3, "Eduardo Rodriguez": 5,
+  "Oscar Castillo": 5, "Jim Call": 7, "Jim Morris": 5, "Joseph Brown": 5, "Joseph Monfredo": 5,
+  "Matt Graves": 5, "Harvey Wofford": 5, "Charles Reaves": 5, "Julian Aldama": 4, "Kwami Pennick": 4,
+  "Derick Acosta": 4, "Brian Morgan": 4, "Roger Martinez": 4, "Samer Al Kattan": 3, "Shannon Cullifer": 4,
+  "Terry Fedder": 7
+};
+EMBEDDED_TECHNICIANS.forEach(t => { t.capacityPerDay = CAPACITY_PER_DAY[t.name] || null; });
+
+// W-2 Field Technicians — confirmed via Confluence's "Field Technician Team Workflow" page
+// (distinct from the 1099 contractor roster above). Base cities are exactly as listed there;
+// street-level addresses aren't published in Confluence for this team, so coordinates are
+// city-center. Each has a dedicated L2 (technical support) contact noted from the same page.
+const W2_FIELD_TECHNICIANS = [
+  { name: "Rod Andrewson", address: "Phoenix, AZ", territory: "Phoenix, AZ", skills: ["W2", "Field Technician"], available: true, lat: 33.4484, lon: -112.0740, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Christopher Rubis.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "Tim Cook-Berry", address: "Brooklyn, NY", territory: "Brooklyn, NY", skills: ["W2", "Field Technician"], available: true, lat: 40.6782, lon: -73.9442, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Jeffrey Holm. Note: the Field Technician roster page says Brooklyn, NY, but the New York territory guide page says he's based in the Bronx and also supports Long Island — Confluence has conflicting info here, worth confirming.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "Charlie Henderson", address: "Dallas, TX", territory: "Dallas, TX", skills: ["W2", "Field Technician"], available: true, lat: 32.7767, lon: -96.7970, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Robert Hunter.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "Tom Marflak", address: "Orlando, FL", territory: "Orlando, FL (DeLand, Spring Hill, Palm Bay)", skills: ["W2", "Field Technician"], available: true, lat: 28.5383, lon: -81.3792, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Colin Dodd. Per the Florida territory guide: based in DeLand, covers DeLand/Orlando/Spring Hill/Palm Bay.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "Andric Ocampo", address: "Los Angeles, CA", territory: "Los Angeles, CA", skills: ["W2", "Field Technician"], available: true, lat: 34.0522, lon: -118.2437, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Abram Leary.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "Michael Rich", address: "Chicago, IL", territory: "Chicago, IL", skills: ["W2", "Field Technician"], available: true, lat: 41.8781, lon: -87.6298, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Jacob Gonzalez.", capacityPerDay: null, fqc: "N/A (W2 team)" },
+  { name: "John Tran", address: "Washington, D.C.", territory: "Washington, D.C.", skills: ["W2", "Field Technician"], available: true, lat: 38.9072, lon: -77.0369, radiusMiles: 50, phone: null, email: null, notes: "L2 support: Richard Huynh.", capacityPerDay: null, fqc: "N/A (W2 team)" }
+];
+EMBEDDED_TECHNICIANS.push(...W2_FIELD_TECHNICIANS);
+
+// Named primary/secondary service-zone cities, transcribed directly from each technician's
+// Confluence "Primary Territory" / "Secondary Territories" sections — this is what's actually
+// shown on their territory maps in Confluence (distinct named zones, not one uniform radius).
+// Zones only include cities we can confidently resolve to a location; broader state-level or
+// vague mentions ("any surrounding areas") are left out rather than guessed at.
+const TERRITORY_ZONES = {
+  "Anthony Mathews": { primary: ["dallas, tx"], secondary: [] },
+  "James Mathews": { primary: ["dallas, tx"], secondary: [] },
+  "Arluster Johnson": { primary: ["las vegas, nv"], secondary: [] },
+  "Bill Raymond": { primary: ["myrtle beach"], secondary: ["charleston, sc", "wilmington, nc", "columbia, sc"] },
+  "Carl McGuire": { primary: ["moreno valley", "riverside, ca"], secondary: ["los angeles", "anaheim", "palm springs"] },
+  "Clyde Barbour": { primary: ["kansas city, ks", "wichita"], secondary: ["columbia, mo", "kirksville", "cedar rapids", "oklahoma city", "tulsa", "omaha"] },
+  "James Cain": { primary: ["kansas city, ks", "wichita"], secondary: ["columbia, mo", "kirksville", "cedar rapids", "oklahoma city", "tulsa", "omaha"] },
+  "Daren Pelletier": { primary: ["greensboro, nc"], secondary: [] },
+  "Don Collingham": { primary: ["boise, id"], secondary: ["twin falls", "pocatello"] },
+  "Eduardo Rodriguez": { primary: ["houston, tx"], secondary: ["austin, tx", "lufkin", "beaumont, tx"] },
+  "Oscar Castillo": { primary: ["houston, tx"], secondary: ["austin, tx", "lufkin", "beaumont, tx"] },
+  "Diego Gastaminza": { primary: ["houston, tx"], secondary: [] },
+  "Fran Killian": { primary: ["rochester"], secondary: ["syracuse", "buffalo"] },
+  "Jim Call": { primary: ["lagrange, ga", "atlanta, ga", "macon, ga", "columbus, ga"], secondary: [] },
+  "Jim Morris": { primary: ["tampa, fl"], secondary: ["lakeland, fl", "sarasota, fl", "sebring, fl", "spring hill, fl", "orlando, fl"] },
+  "Joe Valente": { primary: ["detroit"], secondary: ["saginaw"] },
+  "Joseph Brown": { primary: ["knoxville, tn"], secondary: ["nashville", "chattanooga", "huntsville, al", "johnson city, tn", "bristol, tn", "cookeville", "asheville", "greenville, sc"] },
+  "Joseph Monfredo": { primary: ["baltimore, md"], secondary: ["washington dc", "philadelphia", "harrisburg", "salisbury, md", "fredericksburg, va", "hagerstown"] },
+  "Matt Graves": { primary: ["baltimore, md"], secondary: [] },
+  "Harvey Wofford": { primary: ["baltimore, md"], secondary: [] },
+  "Charles Reaves": { primary: ["baltimore, md"], secondary: [] },
+  "Julian Aldama": { primary: ["miami, fl"], secondary: ["marathon, fl"] },
+  "Alexander Aldama": { primary: ["miami, fl"], secondary: ["marathon, fl"] },
+  "Kwami Pennick": { primary: ["miami, fl"], secondary: ["marathon, fl"] },
+  "Derick Acosta": { primary: ["miami, fl"], secondary: ["marathon, fl"] },
+  "Brian Morgan": { primary: ["miami, fl"], secondary: ["marathon, fl"] },
+  "Eyan Duncan": { primary: [], secondary: ["fort myers", "port st lucie"] },
+  "Radoslaw Gawrys": { primary: ["new york city"], secondary: [] },
+  "Sebastian Montano": { primary: ["new york city"], secondary: ["newark"] },
+  "Ruben Acosta": { primary: ["new york city"], secondary: ["newark"] },
+  "Jermael Lessey": { primary: ["newark"], secondary: ["new york city"] },
+  "Kyle Williams": { primary: ["fort myers", "sebring, fl", "sarasota, fl", "port st lucie"], secondary: [] },
+  "Mac Kearney": { primary: ["fort myers", "sebring, fl", "sarasota, fl", "port st lucie"], secondary: [] },
+  "Nate Williams": { primary: ["youngstown", "akron", "canton, oh"], secondary: ["cleveland", "meadville", "pittsburgh"] },
+  "Roxy Sheets": { primary: ["youngstown", "akron", "canton, oh"], secondary: ["cleveland", "meadville", "pittsburgh"] },
+  "Pete Zimmerman": { primary: ["chicago, il"], secondary: [] },
+  "Roger Martinez": { primary: ["san antonio"], secondary: ["uvalde", "victoria, tx"] },
+  "Ron Janz": { primary: ["milwaukee, wi"], secondary: [] },
+  "Samer Al Kattan": { primary: ["savannah, ga"], secondary: [] },
+  "Shannon Cullifer": { primary: ["bainbridge, ga"], secondary: ["dothan", "valdosta", "panama city, fl", "tallahassee", "mobile", "albany, ga"] },
+  "Terry Fedder": { primary: ["gainesville, fl"], secondary: ["ocala", "jacksonville, fl"] },
+  "Warren Zukina": { primary: ["reading, pa"], secondary: ["philadelphia", "scranton"] },
+  "Tom Marflak": { primary: ["orlando, fl", "deland"], secondary: ["spring hill, fl", "palm bay"] }
+};
+
+// People named in the FQC contact sheet who have no individual "Detailed Information" page
+// with an address in Confluence, so they can't be geocoded or placed on the map.
+const UNMAPPED_TECHNICIANS = [
+  { name: "Daniel Clevenger", note: "Manager — team page has no address on file", fqc: "Tom Post" },
+  { name: "Lawrence Henriquez", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Cameron Siebs", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Jose Zelaya", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Mark Watson", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Jon Hill", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Mario Aguirre", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Kyle Kentala", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Eli Haber", note: "Clevenger team — no address on file", fqc: "Tom Post" },
+  { name: "Dewayne McCaig", note: "No detail page / address on file", fqc: "Christina Anderson" },
+  { name: "Jordan Boyd", note: "Manager — team page has no address on file", fqc: "Christina Anderson" },
+  { name: "Dean Talley", note: "Boyd team — no address on file", fqc: "Christina Anderson" },
+  { name: "Asher Lansiquot", note: "Boyd team — no address on file", fqc: "Christina Anderson" },
+  { name: "Vincent Mathews", note: "Mathews team — listed on contact sheet, no address on Anthony Mathews's page", fqc: "Tom Post" },
+  { name: "Brandon Schaffeld", note: "Nexgen team — listed on contact sheet, missing from Nexgen's address table", fqc: "Julie Spitznogle" },
+  { name: "David Stellato", note: "Alternate dispatch contact for Jim Morris (Tampa) — no dedicated page, address, or phone on file", fqc: "Julie Spitznogle" }
+];
+
+// Built-in city gazetteer so common searches (city or "city, ST") resolve instantly with
+// zero network calls. Only addresses that don't match anything here fall back to a live
+// geocoding lookup. Coordinates are city-center approximations.
+const CITY_GAZETTEER = {
+  "tampa": [27.9506, -82.4572], "tampa, fl": [27.9506, -82.4572],
+  "miami": [25.7617, -80.1918], "miami, fl": [25.7617, -80.1918],
+  "orlando": [28.5383, -81.3792], "orlando, fl": [28.5383, -81.3792],
+  "jacksonville": [30.3322, -81.6557], "jacksonville, fl": [30.3322, -81.6557],
+  "gainesville": [29.6516, -82.3248], "gainesville, fl": [29.6516, -82.3248],
+  "fort myers": [26.6406, -81.8723], "ft myers": [26.6406, -81.8723],
+  "sarasota": [27.3364, -82.5307], "sarasota, fl": [27.3364, -82.5307],
+  "west palm beach": [26.7153, -80.0534],
+  "lehigh acres": [26.6256, -81.6270],
+  "palm coast": [29.4977, -81.2626],
+  "palm bay": [27.9995, -80.6520],
+  "savannah": [32.0809, -81.0912], "savannah, ga": [32.0809, -81.0912],
+  "bainbridge": [30.9036, -84.5738], "bainbridge, ga": [30.9036, -84.5738],
+  "atlanta": [33.7490, -84.3880], "atlanta, ga": [33.7490, -84.3880],
+  "greenville, ga": [33.0243, -84.7099],
+  "houston": [29.7604, -95.3698], "houston, tx": [29.7604, -95.3698],
+  "dallas": [32.7767, -96.7970], "dallas, tx": [32.7767, -96.7970],
+  "san antonio": [29.4241, -98.4936], "new braunfels": [29.7030, -98.1245],
+  "royse city": [32.9748, -96.3286], "fate, tx": [32.9351, -96.3808],
+  "conroe": [30.3119, -95.4560],
+  "las vegas": [36.1699, -115.1398], "las vegas, nv": [36.1699, -115.1398],
+  "kansas city": [39.0997, -94.5786], "kansas city, ks": [39.1140, -94.6275], "wichita": [37.6872, -97.3301],
+  "olathe": [38.8814, -94.8191],
+  "boise": [43.6150, -116.2023], "boise, id": [43.6150, -116.2023],
+  "chicago": [41.8781, -87.6298], "chicago, il": [41.8781, -87.6298],
+  "milwaukee": [43.0389, -87.9065], "milwaukee, wi": [43.0389, -87.9065],
+  "detroit": [42.3314, -83.0458], "waterford, mi": [42.6870, -83.3963],
+  "lansing": [42.7325, -84.5555], "grand blanc": [42.9267, -83.6363],
+  "cincinnati": [39.1031, -84.5120], "hebron, ky": [39.0620, -84.7024],
+  "lexington, ky": [38.0406, -84.5037],
+  "knoxville": [35.9606, -83.9207], "knoxville, tn": [35.9606, -83.9207], "maryville, tn": [35.7565, -83.9705],
+  "greensboro": [36.0726, -79.7920], "greensboro, nc": [36.0726, -79.7920],
+  "myrtle beach": [33.6891, -78.8867], "conway, sc": [33.8360, -79.0658],
+  "baltimore": [39.2904, -76.6122], "baltimore, md": [39.2904, -76.6122], "essex, md": [39.3068, -76.4655],
+  "philadelphia": [39.9526, -75.1652], "reading, pa": [40.3576, -75.9179], "scranton": [41.4090, -75.6624],
+  "moreno valley": [33.9425, -117.2297],
+  "new york": [40.7128, -74.0060], "new york city": [40.7128, -74.0060], "nyc": [40.7128, -74.0060],
+  "staten island": [40.5795, -74.1502], "west babylon": [40.7104, -73.3773], "middle village": [40.7176, -73.8815],
+  "newark": [40.7357, -74.1724], "ewing, nj": [40.2818, -74.8244],
+  "norwalk, ct": [41.1177, -73.4082],
+  "boston": [42.3601, -71.0589], "douglas, ma": [42.0562, -71.7434],
+  "rochester": [43.1566, -77.6088], "canandaigua": [42.8814, -77.2811],
+  "riverside": [33.9533, -117.3962], "riverside, ca": [33.9533, -117.3962], "pinon hills": [34.3811, -117.6503],
+  "los angeles": [34.0522, -118.2437],
+  "lakeland": [28.0395, -81.9498], "lakeland, fl": [28.0395, -81.9498],
+  "sebring": [27.4956, -81.4409], "sebring, fl": [27.4956, -81.4409],
+  "spring hill": [28.4774, -82.5245], "spring hill, fl": [28.4774, -82.5245],
+  "charleston, sc": [32.7765, -79.9311], "wilmington, nc": [34.2257, -77.9447], "columbia, sc": [34.0007, -81.0348],
+  "anaheim": [33.8366, -117.9143], "huntington beach": [33.6603, -118.0031], "palm springs": [33.8303, -116.5453],
+  "rancho cucamonga": [34.1064, -117.5931], "temecula": [33.4936, -117.1484], "victorville": [34.5362, -117.2928],
+  "twin falls": [42.5629, -114.4609], "pocatello": [42.8713, -112.4455],
+  "austin": [30.2672, -97.7431], "austin, tx": [30.2672, -97.7431], "lufkin": [31.3382, -94.7291], "beaumont, tx": [30.0802, -94.1266],
+  "syracuse": [43.0481, -76.1474], "buffalo": [42.8864, -78.8784],
+  "lagrange, ga": [33.0362, -85.0316], "macon, ga": [32.8407, -83.6324], "columbus, ga": [32.4610, -84.9877],
+  "saginaw": [43.4195, -83.9508],
+  "nashville": [36.1627, -86.7816], "chattanooga": [35.0456, -85.3097], "huntsville, al": [34.7304, -86.5861],
+  "johnson city, tn": [36.3134, -82.3535], "bristol, tn": [36.5951, -82.1887], "cookeville": [36.1628, -85.5016],
+  "asheville": [35.5951, -82.5515], "greenville, sc": [34.8526, -82.3940],
+  "washington dc": [38.9072, -77.0369], "harrisburg": [40.2732, -76.8867], "salisbury, md": [38.3607, -75.5994],
+  "fredericksburg, va": [38.3032, -77.4605], "hagerstown": [39.6418, -77.7200],
+  "marathon, fl": [24.7136, -81.0906],
+  "columbia, mo": [38.9517, -92.3341], "kirksville": [40.1948, -92.5832], "cedar rapids": [41.9779, -91.6656],
+  "oklahoma city": [35.4676, -97.5164], "tulsa": [36.1540, -95.9928], "omaha": [41.2565, -95.9345],
+  "dothan": [31.2232, -85.3905], "valdosta": [30.8327, -83.2785], "panama city, fl": [30.1588, -85.6602],
+  "tallahassee": [30.4383, -84.2807], "mobile": [30.6954, -88.0399], "albany, ga": [31.5785, -84.1557],
+  "ocala": [29.1872, -82.1401], "uvalde": [29.2098, -99.7862], "victoria, tx": [28.8053, -97.0036],
+  "cleveland": [41.4993, -81.6944], "youngstown": [41.0998, -80.6495], "akron": [41.0814, -81.5190],
+  "canton, oh": [40.7989, -81.3784], "meadville": [41.6417, -80.1512], "pittsburgh": [40.4406, -79.9959],
+  "port st lucie": [27.2730, -80.3582],
+  "phoenix": [33.4484, -112.0740], "phoenix, az": [33.4484, -112.0740],
+  "brooklyn": [40.6782, -73.9442], "brooklyn, ny": [40.6782, -73.9442],
+  "washington, d.c.": [38.9072, -77.0369], "washington dc": [38.9072, -77.0369],
+  "deland": [28.9853, -81.3031]
+};
+
+function lookupGazetteer(input) {
+  const key = input.toLowerCase().trim().replace(/\s+/g, ' ');
+  if (CITY_GAZETTEER[key]) return { lat: CITY_GAZETTEER[key][0], lon: CITY_GAZETTEER[key][1] };
+  // Try matching just the city part before a comma (e.g. "Tampa, Florida" -> "tampa")
+  const cityOnly = key.split(',')[0].trim();
+  if (CITY_GAZETTEER[cityOnly]) return { lat: CITY_GAZETTEER[cityOnly][0], lon: CITY_GAZETTEER[cityOnly][1] };
+  return null;
+}
+
+(async function () {
+  const map = L.map('map', { zoomControl: true }).setView([27.9506, -82.4572], 6);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: '&copy; Esri'
+  }).addTo(map);
+
+  // US state border overlay (borders only, no fill) so states are visually distinguishable
+  fetch('https://cdn.jsdelivr.net/gh/PublicaMundi/MappingAPI@master/data/geojson/us-states.json')
+    .then(r => r.json())
+    .then(geo => {
+      L.geoJSON(geo, {
+        style: { color: '#5b6672', weight: 1.2, opacity: 0.55, fillOpacity: 0 }
+      }).addTo(map);
+    })
+    .catch(() => { /* borders are a nice-to-have; map still works fine without them */ });
+
+  let markers = [];
+  let technicians = []; // { name, address, skills, available, lat, lon }
+  let searchMarker = null;
+  let routeLine = null;
+  let routeLegLabels = [];
+  let territoryLayers = [];
+
+  const listEl = document.getElementById('tech-list');
+  const statusEl = document.getElementById('status-line');
+  const lastSyncedEl = document.getElementById('last-synced');
+  const searchBtn = document.getElementById('search-btn');
+  const addressInput = document.getElementById('address-input');
+  const routeInput = document.getElementById('route-input');
+  const routeSearchBtn = document.getElementById('route-search-btn');
+  const scheduleFileInput = document.getElementById('schedule-file-input');
+  const scheduleStatusEl = document.getElementById('schedule-status');
+  const scheduleClearBtn = document.getElementById('schedule-clear-btn');
+  const unmappedToggle = document.getElementById('unmapped-toggle');
+  const territoryLegendToggle = document.getElementById('territory-legend-toggle');
+  const territoryLegendEl = document.getElementById('territory-legend');
+  territoryLegendToggle.addEventListener('click', () => {
+    territoryLegendEl.classList.toggle('open');
+  });
+  const unmappedList = document.getElementById('unmapped-list');
+  const unmappedCount = document.getElementById('unmapped-count');
+  const capacityFilterEl = document.getElementById('capacity-filter');
+  const groupBySelect = document.getElementById('group-by-select');
+  const mapKeyLegend = document.getElementById('map-key-legend');
+  const mapKeyCount = document.getElementById('map-key-count');
+  const mapKeyShowAll = document.getElementById('map-key-showall');
+  const mapKeyPanel = document.getElementById('map-key-panel');
+  const mapKeyCollapse = document.getElementById('map-key-collapse');
+
+  let activeFilters = new Set();
+  let classificationFilter = 'all'; // 'all' | '1099' | 'W2'
+  let lastSearchLocs = null; // remembers the last search so filter changes can re-render it
+  let groupBy = 'status';
+  let hiddenGroups = new Set();
+  let groupColorMap = {}; // value -> color, rebuilt whenever groupBy or the dataset changes
+
+  const GROUP_PALETTE = ['#e63946', '#f4a261', '#2a9d8f', '#8e44ad', '#3d5a80', '#e91e8c', '#5aa469', '#c9a227', '#457b9d', '#a05195', '#e07a5f', '#4a5859'];
+
+  function extractState(address) {
+    const m = address.match(/,\s*([A-Za-z]{2})\b\s*\d{0,5}\s*$/) || address.match(/,\s*([A-Za-z]{2})\.?\s*$/);
+    return m ? m[1].toUpperCase() : 'Unknown';
+  }
+
+  function capacityTier(t) {
+    if (t.capacityPerDay == null) return 'Not stated';
+    if (t.capacityPerDay <= 3) return 'Low (\u22643/day)';
+    if (t.capacityPerDay <= 5) return 'Medium (4-5/day)';
+    return 'High (6+/day)';
+  }
+
+  function getGroupValue(t) {
+    switch (groupBy) {
+      case 'classification': return t.skills.includes('W2') ? 'W2' : '1099';
+      case 'fqc': return t.fqc || 'Unassigned';
+      case 'state': return extractState(t.address);
+      case 'capacity': return capacityTier(t);
+      case 'status':
+      default: return t.available ? 'Active' : 'Inactive';
+    }
+  }
+
+  function rebuildGroupColors() {
+    const pool = technicians.filter(matchesFilters);
+    const counts = {};
+    pool.forEach(t => { const v = getGroupValue(t); counts[v] = (counts[v] || 0) + 1; });
+    const values = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    groupColorMap = {};
+    if (groupBy === 'status') {
+      groupColorMap['Active'] = '#0f7173';
+      groupColorMap['Inactive'] = '#b3555b';
+    } else {
+      values.forEach((v, i) => { groupColorMap[v] = GROUP_PALETTE[i % GROUP_PALETTE.length]; });
+    }
+
+    mapKeyCount.textContent = pool.length + ' pin(s)';
+    mapKeyLegend.innerHTML = '';
+    values.forEach(v => {
+      const row = document.createElement('div');
+      row.className = 'legend-row' + (hiddenGroups.has(v) ? ' hidden-group' : '');
+      const color = groupColorMap[v];
+      row.innerHTML =
+        '<span class="legend-dot" style="background:' + color + ';"></span>' +
+        '<span class="legend-label">' + v + '</span>' +
+        '<span class="legend-count">' + counts[v] + '</span>';
+      row.addEventListener('click', () => {
+        if (hiddenGroups.has(v)) hiddenGroups.delete(v);
+        else hiddenGroups.add(v);
+        rebuildGroupColors();
+        refreshMapAndList();
+      });
+      mapKeyLegend.appendChild(row);
+    });
+  }
+
+  // Single source of truth for "something changed, redraw everything that depends on
+  // filters/grouping" — keeps the map pins and the sidebar list from ever going out of sync.
+  function refreshMapAndList() {
+    clearMarkers();
+    renderTechnicianMarkers();
+    let visiblePts;
+    if (lastSearchLocs) {
+      renderList(lastSearchLocs);
+      visiblePts = [
+        ...lastSearchLocs.map(l => [l.lat, l.lon]),
+        ...technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t) && t.lat != null).map(t => [t.lat, t.lon])
+      ];
+    } else {
+      renderDirectory();
+      visiblePts = technicians
+        .filter(t => matchesFilters(t) && passesGroupVisibility(t) && t.lat != null)
+        .map(t => [t.lat, t.lon]);
+    }
+    // Re-fit to whatever's currently visible, so toggling a filter or legend group zooms back
+    // out instead of staying on a previous zoomed-in view (e.g. after viewing one tech's territory).
+    if (visiblePts.length > 1) map.fitBounds(visiblePts, { padding: [40, 40] });
+    else if (visiblePts.length === 1) map.setView(visiblePts[0], 10);
+  }
+
+  groupBySelect.addEventListener('change', () => {
+    groupBy = groupBySelect.value;
+    hiddenGroups = new Set();
+    rebuildGroupColors();
+    refreshMapAndList();
+  });
+
+  mapKeyShowAll.addEventListener('click', () => {
+    hiddenGroups = new Set();
+    rebuildGroupColors();
+    refreshMapAndList();
+  });
+
+  mapKeyCollapse.addEventListener('click', () => {
+    mapKeyPanel.classList.toggle('collapsed');
+    mapKeyCollapse.textContent = mapKeyPanel.classList.contains('collapsed') ? '+' : '\u2212';
+  });
+
+  const classificationSelect = document.getElementById('classification-select');
+  classificationSelect.addEventListener('change', () => {
+    classificationFilter = classificationSelect.value;
+    rebuildGroupColors();
+    refreshMapAndList();
+  });
+
+  const skillsDropdownBtn = document.getElementById('skills-dropdown-btn');
+  const skillsDropdownPanel = document.getElementById('skills-dropdown-panel');
+
+  function updateSkillsButtonLabel() {
+    if (activeFilters.size) {
+      skillsDropdownBtn.textContent = activeFilters.size + ' skill' + (activeFilters.size > 1 ? 's' : '') + ' selected \u25be';
+      skillsDropdownBtn.classList.add('has-selection');
+    } else {
+      skillsDropdownBtn.textContent = 'Any skill \u25be';
+      skillsDropdownBtn.classList.remove('has-selection');
+    }
+  }
+
+  skillsDropdownBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    skillsDropdownPanel.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!skillsDropdownPanel.contains(e.target) && e.target !== skillsDropdownBtn) {
+      skillsDropdownPanel.classList.remove('open');
+    }
+  });
+  skillsDropdownPanel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) activeFilters.add(cb.value);
+      else activeFilters.delete(cb.value);
+      updateSkillsButtonLabel();
+      rebuildGroupColors();
+      refreshMapAndList();
+    });
+  });
+
+  capacityFilterEl.addEventListener('change', () => { rebuildGroupColors(); refreshMapAndList(); });
+
+  const searchModeSelect = document.getElementById('search-mode-select');
+  const searchBoxEl = document.getElementById('search-box');
+  const routeBoxEl = document.getElementById('route-box');
+  searchModeSelect.addEventListener('change', () => {
+    const mode = searchModeSelect.value;
+    if (mode === 'route') {
+      searchBoxEl.style.display = 'none';
+      routeBoxEl.style.display = 'flex';
+    } else {
+      searchBoxEl.style.display = 'flex';
+      routeBoxEl.style.display = 'none';
+      addressInput.placeholder = mode === 'name'
+        ? "Enter a technician's name, e.g. Jim Morris"
+        : 'Enter a job address, e.g. Tampa FL or 123 Main St';
+    }
+  });
+  // Route box starts hidden — "Address" is the default search mode
+  routeBoxEl.style.display = 'none';
+
+  function matchesFilters(t) {
+    if (classificationFilter !== 'all' && !t.skills.includes(classificationFilter)) return false;
+    const minCap = parseInt(capacityFilterEl.value, 10) || 0;
+    if (minCap > 0 && (!t.capacityPerDay || t.capacityPerDay < minCap)) return false;
+    if (!activeFilters.size) return true;
+    const skillsText = t.skills.join(' | ').toLowerCase();
+    for (const f of activeFilters) {
+      if (!skillsText.includes(f)) return false;
+    }
+    return true;
+  }
+
+  function passesGroupVisibility(t) {
+    return !hiddenGroups.has(getGroupValue(t));
+  }
+
+  unmappedCount.textContent = UNMAPPED_TECHNICIANS.length;
+  unmappedList.innerHTML = UNMAPPED_TECHNICIANS.map(u =>
+    '<div class="unmapped-item"><div class="u-name">' + u.name + '</div>' +
+    '<div class="u-note">' + u.note + ' &middot; FQC: ' + u.fqc + '</div></div>'
+  ).join('');
+  unmappedToggle.addEventListener('click', () => unmappedList.classList.toggle('open'));
+
+  function setStatus(msg, isError) {
+    if (!msg) {
+      statusEl.classList.remove('visible', 'error');
+      statusEl.innerHTML = '';
+      return;
+    }
+    statusEl.classList.add('visible');
+    statusEl.classList.toggle('error', !!isError);
+    statusEl.innerHTML = msg;
+  }
+
+  function clearMarkers() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    if (territoryLayers.length) {
+      territoryLayers.forEach(l => map.removeLayer(l));
+      territoryLayers = [];
+    }
+    if (routeLine) { map.removeLayer(routeLine); routeLine = null; }
+    if (routeLegLabels.length) {
+      routeLegLabels.forEach(l => map.removeLayer(l));
+      routeLegLabels = [];
+    }
+  }
+
+  function haversineMiles(lat1, lon1, lat2, lon2) {
+    const R = 3958.8;
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  async function geocode(address, attempt) {
+    attempt = attempt || 1;
+    const cacheKey = 'geocode:' + address.toLowerCase().trim();
+    try {
+      const cached = await window.storage.get(cacheKey, false);
+      if (cached && cached.value) return JSON.parse(cached.value); // cache hit: no network, no delay
+    } catch (e) { /* not cached */ }
+
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=' + encodeURIComponent(address);
+    let res;
+    try {
+      res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    } catch (networkErr) {
+      res = null;
+    }
+
+    if ((!res || !res.ok) && attempt < 3) {
+      await new Promise(r => setTimeout(r, 1200 * attempt));
+      return geocode(address, attempt + 1);
+    }
+    if (!res || !res.ok) throw new Error('Geocoding failed for: ' + address);
+
+    const data = await res.json();
+    if (!data.length) {
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 1200 * attempt));
+        return geocode(address, attempt + 1);
+      }
+      throw new Error('No location found for: ' + address);
+    }
+    const result = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+
+    try {
+      await window.storage.set(cacheKey, JSON.stringify(result), false);
+    } catch (e) { /* non-fatal */ }
+
+    await new Promise(r => setTimeout(r, 1000)); // rate-limit real network calls only
+    return result;
+  }
+
+  async function geocodeList(rawList, statusVerb) {
+    const result = [];
+    let i = 0;
+    for (const t of rawList) {
+      i++;
+      setStatus('<span class="spinner"></span>' + statusVerb + ' address ' + i + ' of ' + rawList.length + '…');
+      try {
+        const loc = await geocode(t.address || '');
+        result.push({ ...t, lat: loc.lat, lon: loc.lon });
+      } catch (geoErr) {
+        result.push({ ...t, lat: null, lon: null });
+      }
+    }
+    return result;
+  }
+
+  async function repairMissingCoordinates(list) {
+    const missing = list.filter(t => t.lat == null || t.lon == null);
+    if (!missing.length) return list;
+
+    setStatus('<span class="spinner"></span>Retrying ' + missing.length + ' address(es) that failed earlier…');
+    for (const t of missing) {
+      try {
+        const loc = await geocode(t.address || '');
+        t.lat = loc.lat;
+        t.lon = loc.lon;
+      } catch (e) { /* still failed, leave as-is */ }
+    }
+    return list;
+  }
+
+  function loadTechnicians() {
+    // Fully offline: coordinates are baked into EMBEDDED_TECHNICIANS above, so this
+    // requires zero network calls and zero storage lookups. Instant every time.
+    technicians = EMBEDDED_TECHNICIANS.map(t => ({ ...t }));
+    lastSyncedEl.textContent = 'Loaded (offline snapshot, 2026-09-16)';
+    setStatus('');
+  }
+
+  function showTerritory(t) {
+    territoryLayers.forEach(l => map.removeLayer(l));
+    territoryLayers = [];
+    if (t.lat == null || t.lon == null) return;
+
+    const PRIMARY_COLOR = '#0f7173';   // teal — reliable, <=60min coverage
+    const SECONDARY_COLOR = '#c98a2c'; // amber — travels there, trip fee likely
+    const homeColor = t.available ? '#0f7173' : '#b3555b';
+    const zones = TERRITORY_ZONES[t.name];
+    const allPoints = [[t.lat, t.lon]];
+
+    const addZoneCircle = (latlon, label, isPrimary) => {
+      const color = isPrimary ? PRIMARY_COLOR : SECONDARY_COLOR;
+      const circle = L.circle(latlon, {
+        radius: 18 * 1609.34, // ~18mi per named zone, roughly city-metro sized
+        color: color,
+        weight: isPrimary ? 2.5 : 1.5,
+        opacity: isPrimary ? 0.9 : 0.7,
+        fillColor: color,
+        fillOpacity: isPrimary ? 0.22 : 0.14
+      }).addTo(map);
+      circle.bindTooltip((isPrimary ? 'Primary: ' : 'Secondary: ') + label, { permanent: true, direction: 'center', className: 'territory-label' + (isPrimary ? '' : ' secondary') });
+      territoryLayers.push(circle);
+      allPoints.push(latlon);
+    };
+
+    if (zones && (zones.primary.length || zones.secondary.length)) {
+      zones.primary.forEach(cityKey => {
+        const loc = lookupGazetteer(cityKey);
+        if (loc) addZoneCircle([loc.lat, loc.lon], cityLabel(cityKey), true);
+      });
+      zones.secondary.forEach(cityKey => {
+        const loc = lookupGazetteer(cityKey);
+        if (loc) addZoneCircle([loc.lat, loc.lon], cityLabel(cityKey), false);
+      });
+    }
+
+    if (!territoryLayers.length) {
+      // Fallback: no named zone data for this person, use the estimated coverage radius instead
+      const circle = L.circle([t.lat, t.lon], {
+        radius: t.radiusMiles * 1609.34,
+        color: PRIMARY_COLOR,
+        weight: 3,
+        opacity: 0.9,
+        fillColor: PRIMARY_COLOR,
+        fillOpacity: 0.18
+      }).addTo(map);
+      circle.bindTooltip(t.name + ' — ~' + t.radiusMiles + ' mi coverage (estimated)', { permanent: true, direction: 'center', className: 'territory-label' });
+      territoryLayers.push(circle);
+    }
+
+    // Highlight the technician's own home marker distinctly (active/inactive color) so it
+    // stands out from the primary/secondary zone circles.
+    const homeDot = L.circleMarker([t.lat, t.lon], {
+      radius: 6, color: '#fff', weight: 2, fillColor: homeColor, fillOpacity: 1
+    }).addTo(map);
+    territoryLayers.push(homeDot);
+
+    const bounds = L.latLngBounds(allPoints);
+    map.fitBounds(bounds, { padding: [30, 30] });
+
+    showSelectedTechPanel(t);
+    highlightSelectedCard(t.name);
+  }
+
+  const selectedTechPanel = document.getElementById('selected-tech-panel');
+  const selectedTechBody = document.getElementById('selected-tech-body');
+  const selectedTechClose = document.getElementById('selected-tech-close');
+
+  function showSelectedTechPanel(t) {
+    const isW2 = t.skills.includes('W2');
+    const phoneHTML = t.phone ? '<a href="tel:' + t.phone.replace(/[^0-9]/g, '') + '">' + t.phone + '</a>' : 'No phone on file';
+    const emailHTML = t.email ? '<a href="mailto:' + t.email + '">' + t.email + '</a>' : 'No email on file';
+    const zones = TERRITORY_ZONES[t.name];
+    const zonesHTML = zones && (zones.primary.length || zones.secondary.length)
+      ? (zones.primary.length ? '<div class="st-row"><b>Primary:</b> ' + zones.primary.map(cityLabel).join(', ') + '</div>' : '') +
+        (zones.secondary.length ? '<div class="st-row"><b>Secondary:</b> ' + zones.secondary.map(cityLabel).join(', ') + '</div>' : '')
+      : '<div class="st-row">No named zones on file — showing an estimated ~' + t.radiusMiles + ' mi radius.</div>';
+
+    selectedTechBody.innerHTML =
+      '<div class="st-name">' + t.name + '</div>' +
+      '<div class="st-row">' +
+        '<span class="skill-tag classification ' + (isW2 ? 'tag-w2' : 'tag-1099') + '">' + (isW2 ? 'W2' : '1099') + '</span> ' +
+        '<span class="badge ' + (t.available ? 'available' : 'unavailable') + '">' + (t.available ? 'Active' : 'Inactive') + '</span>' +
+      '</div>' +
+      '<div class="st-row">' + t.address + '</div>' +
+      '<div class="st-row">' + phoneHTML + ' &middot; ' + emailHTML + '</div>' +
+      '<div class="st-section-title">Territory</div>' +
+      '<div class="st-row">' + (t.territory || '—') + '</div>' +
+      zonesHTML +
+      '<div class="st-section-title">Capacity &amp; FQC</div>' +
+      '<div class="st-row">' + (t.capacityPerDay ? t.capacityPerDay + ' SA/day (stated)' : 'Capacity not stated as a number') + '</div>' +
+      '<div class="st-row">FQC: ' + (t.fqc || 'Unassigned') + '</div>' +
+      (t.notes ? '<div class="st-section-title">Notes</div><div class="tech-notes" style="margin-top:0;">\u26A0 ' + t.notes + '</div>' : '') +
+      '<div class="st-section-title">Skills</div>' +
+      '<div class="st-row">' + t.skills.filter(s => s !== '1099' && s !== 'W2').map(s => '<span class="skill-tag">' + s + '</span>').join('') + '</div>';
+
+    selectedTechPanel.classList.add('open');
+  }
+
+  function highlightSelectedCard(name) {
+    document.querySelectorAll('.tech-card').forEach(c => c.classList.remove('selected-card'));
+    const card = listEl.querySelector('.tech-card[data-tech-name="' + name.replace(/"/g, '') + '"]');
+    if (card) {
+      card.classList.add('selected-card');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  selectedTechClose.addEventListener('click', () => {
+    selectedTechPanel.classList.remove('open');
+    territoryLayers.forEach(l => map.removeLayer(l));
+    territoryLayers = [];
+    document.querySelectorAll('.tech-card').forEach(c => c.classList.remove('selected-card'));
+    refreshMapAndList();
+  });
+
+  function cityLabel(key) {
+    // Turn a gazetteer key like "tampa, fl" into a display label like "Tampa, FL"
+    return key.split(',').map(part => part.trim()).map(part =>
+      part.length <= 2 ? part.toUpperCase() : part.replace(/\b\w/g, c => c.toUpperCase())
+    ).join(', ');
+  }
+
+  // Per Confluence's "Technician Territory Guide": Primary = <=60min from home (reliable,
+  // no extra cost); Secondary = they'll travel there regularly but a trip fee may apply.
+  // Classify a searched job location against a technician's known zones accordingly.
+  function classifyZoneMatch(t, searchLat, searchLon) {
+    if (t.lat == null) return null;
+    const homeDist = haversineMiles(searchLat, searchLon, t.lat, t.lon);
+    if (homeDist <= 60) return { level: 'primary', label: 'In primary territory (\u2264 60 min from home)' };
+
+    const zones = TERRITORY_ZONES[t.name];
+    if (zones) {
+      for (const cityKey of zones.primary) {
+        const loc = lookupGazetteer(cityKey);
+        if (loc && haversineMiles(searchLat, searchLon, loc.lat, loc.lon) <= 20) {
+          return { level: 'primary', label: 'In primary territory (' + cityLabel(cityKey) + ')' };
+        }
+      }
+      for (const cityKey of zones.secondary) {
+        const loc = lookupGazetteer(cityKey);
+        if (loc && haversineMiles(searchLat, searchLon, loc.lat, loc.lon) <= 20) {
+          return { level: 'secondary', label: 'Secondary territory (' + cityLabel(cityKey) + ') \u2014 trip fee likely' };
+        }
+      }
+    }
+    return { level: 'outside', label: 'Outside stated territory \u2014 confirm before dispatch' };
+  }
+
+  function buildCardHTML(t, opts) {
+    opts = opts || {};
+    const distBlock = opts.distText
+      ? '<span class="tech-distance">' + opts.distText + '</span>'
+      : '';
+    const phoneHTML = t.phone
+      ? '<a class="tech-phone" href="tel:' + t.phone.replace(/[^0-9]/g, '') + '">' + t.phone + '</a>'
+      : '';
+    const emailHTML = t.email
+      ? '<a class="tech-phone" href="mailto:' + t.email + '">' + t.email + '</a>'
+      : '';
+    const contactHTML = [phoneHTML, emailHTML].filter(Boolean).join(' &middot; ');
+    const capacityText = t.capacityPerDay ? t.capacityPerDay + ' SA/day (stated)' : null;
+    return (
+      '<div class="tech-top"><span class="tech-name">' + t.name + '</span>' + distBlock + '</div>' +
+      '<div class="tech-address">' + t.address + (contactHTML ? ' &middot; ' + contactHTML : '') + '</div>' +
+      (t.territory ? '<div class="tech-territory">' + t.territory + ' &middot; ~' + t.radiusMiles + ' mi coverage' +
+        (capacityText ? ' &middot; ' + capacityText : '') + '</div>' : '') +
+      (opts.zoneBadgeHTML || '') +
+      (opts.routeStopsHTML || '') +
+      (t.notes ? '<div class="tech-notes">\u26A0 ' + t.notes + '</div>' : '') +
+      '<div class="tech-meta">' +
+      '<span>' + t.skills.map(s => {
+        const isClass = s === '1099' || s === 'W2';
+        const classSuffix = isClass ? ' classification ' + (s === 'W2' ? 'tag-w2' : 'tag-1099') : '';
+        return '<span class="skill-tag' + classSuffix + '">' + s + '</span>';
+      }).join('') + '</span>' +
+      '<span style="display:flex; align-items:center; gap:6px;">' +
+      '<button class="copy-btn" type="button">Copy</button>' +
+      '<span class="badge ' + (t.available ? 'available' : 'unavailable') + '">' +
+      (t.available ? 'Active' : 'Inactive') + '</span>' +
+      '</span></div>'
+    );
+  }
+
+  function copyDispatchInfo(t, btn) {
+    const lines = [
+      t.name,
+      t.phone || '(no phone on file)',
+      t.email || '',
+      t.address,
+      t.territory || '',
+      t.skills.filter(s => s !== '1099' && s !== 'W2').join(', ')
+    ].filter(Boolean);
+    const text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => flashCopied(btn)).catch(() => flashCopied(btn, true));
+    } else {
+      flashCopied(btn, true);
+    }
+  }
+
+  function flashCopied(btn, failed) {
+    const original = btn.textContent;
+    btn.textContent = failed ? 'Copy failed' : 'Copied!';
+    btn.classList.toggle('copied', !failed);
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  }
+
+  function attachCardHandlers(card, t) {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.copy-btn')) return; // don't trigger territory view when copying
+      showTerritory(t);
+    });
+    const copyBtn = card.querySelector('.copy-btn');
+    if (copyBtn) copyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyDispatchInfo(t, copyBtn); });
+  }
+
+  function renderDirectory() {
+    lastSearchLocs = null;
+    const filtered = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t)).sort((a, b) => a.name.localeCompare(b.name));
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      listEl.innerHTML = '<div id="empty-state">No technicians match the selected filters.</div>';
+      return;
+    }
+    const hint = document.createElement('div');
+    hint.style.cssText = 'padding:8px 20px;font-size:11.5px;color:var(--ink-soft);border-bottom:1px solid var(--line);';
+    hint.textContent = filtered.length + ' technician(s) match — enter an address above to sort by distance.';
+    listEl.appendChild(hint);
+    filtered.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'tech-card';
+      card.dataset.techName = t.name;
+      card.innerHTML = buildCardHTML(t);
+      attachCardHandlers(card, t);
+      listEl.appendChild(card);
+    });
+  }
+  function renderTechnicianMarkers() {
+    technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t)).forEach(t => {
+      if (t.lat == null || t.lon == null) return;
+      const isW2 = t.skills.includes('W2');
+      const groupVal = getGroupValue(t);
+      const fillColor = groupColorMap[groupVal] || (t.available ? '#0f7173' : '#b3555b');
+      const marker = L.circleMarker([t.lat, t.lon], {
+        radius: isW2 ? 9 : 8,
+        color: isW2 ? '#6b3fa0' : fillColor,
+        fillColor: fillColor,
+        fillOpacity: 0.85,
+        weight: isW2 ? 3 : 2
+      }).addTo(map);
+      marker.bindPopup(
+        '<b>' + t.name + '</b> ' + (isW2 ? '<span style="color:#6b3fa0;font-weight:600;">(W2)</span>' : '<span style="color:#3d5a80;font-weight:600;">(1099)</span>') + '<br/>' +
+        t.address + '<br/>' +
+        (t.territory ? t.territory + '<br/>' : '') +
+        'Covers ~' + t.radiusMiles + ' mi radius<br/>' +
+        (t.skills.filter(s => s !== '1099' && s !== 'W2').length ? t.skills.filter(s => s !== '1099' && s !== 'W2').join(', ') + '<br/>' : '') +
+        (t.available ? 'Active' : 'Inactive')
+      );
+      marker.on('click', () => showTerritory(t));
+      markers.push(marker);
+    });
+  }
+
+  function renderList(searchLocs) {
+    lastSearchLocs = searchLocs;
+    const isRoute = searchLocs.length > 1;
+
+    let candidates = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t));
+    const unplaced = candidates.filter(t => t.lat == null);
+    candidates = candidates.filter(t => t.lat != null);
+
+    const withMetrics = candidates.map(t => {
+      const dists = searchLocs.map(loc => haversineMiles(loc.lat, loc.lon, t.lat, t.lon));
+      const maxDist = Math.max(...dists);
+      const zoneMatches = searchLocs.map(loc => classifyZoneMatch(t, loc.lat, loc.lon));
+      // Worst-case zone classification governs the overall badge (outside > secondary > primary)
+      const order = { outside: 0, secondary: 1, primary: 2 };
+      const worst = zoneMatches.reduce((a, b) => order[b.level] < order[a.level] ? b : a);
+      return { t, dists, maxDist, worst };
+    }).sort((a, b) => a.maxDist - b.maxDist);
+
+    listEl.innerHTML = '';
+    if (!withMetrics.length) {
+      listEl.innerHTML = '<div id="empty-state">No technicians match' + (activeFilters.size || capacityFilterEl.value !== '0' ? ' the selected filters' : '') + '.</div>';
+      return;
+    }
+    if (unplaced.length) {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'padding:8px 20px;font-size:11.5px;color:var(--unavailable);border-bottom:1px solid var(--line);';
+      warn.textContent = 'Could not map: ' + unplaced.map(t => t.name).join(', ') + ' (address failed to geocode — try Refresh)';
+      listEl.appendChild(warn);
+    }
+
+    withMetrics.forEach(({ t, dists, maxDist, worst }) => {
+      const card = document.createElement('div');
+      card.className = 'tech-card';
+      card.dataset.techName = t.name;
+      const distText = isRoute ? maxDist.toFixed(1) + ' mi (farthest stop)' : dists[0].toFixed(1) + ' mi';
+      const routeStopsHTML = isRoute
+        ? '<div class="route-stop-dist">' + searchLocs.map((loc, i) => 'Stop ' + (i + 1) + ': ' + dists[i].toFixed(1) + ' mi').join(' &middot; ') + '</div>'
+        : '';
+      const zoneBadgeHTML = '<div class="zone-badge zone-' + worst.level + '">' + (isRoute ? 'Worst stop: ' : '') + worst.label + '</div>';
+      card.innerHTML = buildCardHTML(t, { distText, zoneBadgeHTML, routeStopsHTML });
+      attachCardHandlers(card, t);
+      listEl.appendChild(card);
+    });
+  }
+
+  async function resolveOneAddress(address) {
+    let loc = lookupGazetteer(address);
+    if (!loc) loc = await geocode(address); // live fallback only for addresses not in the local gazetteer
+    return loc;
+  }
+
+  function findTechnicianMatches(query) {
+    const q = query.toLowerCase().trim();
+    if (q.length < 2) return [];
+    return technicians.filter(t => t.name.toLowerCase().includes(q));
+  }
+
+  function renderNameSearchResults(matches, query) {
+    lastSearchLocs = null;
+    clearMarkers();
+    renderTechnicianMarkers();
+
+    const filtered = matches.filter(t => matchesFilters(t) && passesGroupVisibility(t));
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      listEl.innerHTML = '<div id="empty-state">Found "' + query + '" by name, but no match passes the current filters.</div>';
+      return;
+    }
+    const hint = document.createElement('div');
+    hint.style.cssText = 'padding:8px 20px;font-size:11.5px;color:var(--ink-soft);border-bottom:1px solid var(--line);';
+    hint.textContent = filtered.length + ' technician(s) matched "' + query + '" by name.';
+    listEl.appendChild(hint);
+    filtered.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'tech-card';
+      card.dataset.techName = t.name;
+      card.innerHTML = buildCardHTML(t);
+      attachCardHandlers(card, t);
+      listEl.appendChild(card);
+    });
+
+    if (filtered.length === 1 && filtered[0].lat != null) {
+      showTerritory(filtered[0]);
+    } else {
+      const pts = filtered.filter(t => t.lat != null).map(t => [t.lat, t.lon]);
+      if (pts.length > 1) map.fitBounds(pts, { padding: [60, 60] });
+      else if (pts.length === 1) map.setView(pts[0], 10);
+    }
+  }
+
+  function pinIcon(label, color) {
+    color = color || '#3d5a80';
+    return L.divIcon({
+      className: '',
+      html:
+        '<div style="position:relative;width:28px;height:38px;">' +
+          '<svg width="28" height="38" viewBox="0 0 28 38" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z" fill="' + color + '" stroke="#fff" stroke-width="1.5"/>' +
+            '<circle cx="14" cy="14" r="6" fill="#fff"/>' +
+          '</svg>' +
+          (label != null ? '<div style="position:absolute;top:5px;left:0;width:28px;text-align:center;font-size:10px;font-weight:700;color:' + color + ';">' + label + '</div>' : '') +
+        '</div>',
+      iconSize: [28, 38],
+      iconAnchor: [14, 38],
+      popupAnchor: [0, -34]
+    });
+  }
+
+  async function locateAndRender(addressLines, isRoute, disableBtn) {
+    setStatus('<span class="spinner"></span>Locating address' + (addressLines.length > 1 ? 'es' : '') + '…');
+    disableBtn.disabled = true;
+    try {
+      const locs = [];
+      const failed = [];
+      for (const line of addressLines) {
+        try {
+          locs.push({ ...(await resolveOneAddress(line)), label: line });
+        } catch (e) {
+          failed.push(line);
+        }
+      }
+      if (!locs.length) throw new Error('Could not locate any of the entered addresses.');
+
+      clearMarkers();
+      if (searchMarker) { searchMarker.forEach(m => map.removeLayer(m)); searchMarker = null; }
+
+      const jobMarkers = locs.map((loc, i) => {
+        const m = L.marker([loc.lat, loc.lon], {
+          icon: pinIcon(isRoute ? (i + 1) : null, '#3d5a80')
+        }).addTo(map);
+        m.bindPopup('<b>' + (isRoute ? 'Stop ' + (i + 1) : 'Job site') + '</b>' + loc.label);
+        return m;
+      });
+      searchMarker = jobMarkers;
+      if (jobMarkers.length === 1) jobMarkers[0].openPopup();
+
+      let totalRouteMiles = 0;
+      if (isRoute && locs.length > 1) {
+        const latlngs = locs.map(l => [l.lat, l.lon]);
+        routeLine = L.polyline(latlngs, { color: '#3d5a80', weight: 2.5, opacity: 0.7, dashArray: '6,6' }).addTo(map);
+        for (let i = 0; i < locs.length - 1; i++) {
+          const legMiles = haversineMiles(locs[i].lat, locs[i].lon, locs[i + 1].lat, locs[i + 1].lon);
+          totalRouteMiles += legMiles;
+          const midLat = (locs[i].lat + locs[i + 1].lat) / 2;
+          const midLon = (locs[i].lon + locs[i + 1].lon) / 2;
+          const legLabel = L.marker([midLat, midLon], {
+            icon: L.divIcon({
+              className: '',
+              html: '<div style="background:rgba(27,36,48,0.85);color:#fff;font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;">' + legMiles.toFixed(1) + ' mi</div>',
+              iconSize: [60, 18],
+              iconAnchor: [30, 9]
+            })
+          }).addTo(map);
+          routeLegLabels.push(legLabel);
+        }
+        setStatus(failed.length ? 'Could not locate: ' + failed.join('; ') : 'Route total: ' + totalRouteMiles.toFixed(1) + ' mi across ' + locs.length + ' stops (in the order entered)', false);
+      }
+
+      renderTechnicianMarkers();
+      renderList(locs);
+
+      const bounds = [...locs.map(l => [l.lat, l.lon]), ...technicians.filter(t => t.lat != null).map(t => [t.lat, t.lon])];
+      if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40] });
+      else map.setView([locs[0].lat, locs[0].lon], 12);
+
+      if (!isRoute || locs.length <= 1) {
+        setStatus(failed.length ? 'Could not locate: ' + failed.join('; ') : '', failed.length > 0);
+      }
+    } catch (err) {
+      setStatus('Could not locate that address: ' + err.message, true);
+    } finally {
+      disableBtn.disabled = false;
+    }
+  }
+
+  async function runSearch() {
+    const raw = addressInput.value.trim();
+    if (!raw) {
+      setStatus('Enter an address or a technician name.', true);
+      return;
+    }
+    if (technicians.length === 0) loadTechnicians();
+    if (technicians.length === 0) return;
+
+    // If this looks like a technician's name rather than an address, jump straight to them
+    // instead of trying to geocode it.
+    const nameMatches = findTechnicianMatches(raw);
+    if (nameMatches.length) {
+      setStatus('');
+      renderNameSearchResults(nameMatches, raw);
+      return;
+    }
+
+    await locateAndRender([raw], false, searchBtn);
+  }
+
+  async function runRoute() {
+    const raw = routeInput.value.trim();
+    if (!raw) {
+      setStatus('Enter at least one stop address.', true);
+      return;
+    }
+    if (technicians.length === 0) loadTechnicians();
+    if (technicians.length === 0) return;
+
+    const addressLines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    await locateAndRender(addressLines, true, routeSearchBtn);
+  }
+
+  // ---- Job schedule spreadsheet upload ----
+  // Note: Confluence doesn't track day-by-day technician availability (established earlier —
+  // it only has territory/skill/active-status data). So "available" here means "active and a
+  // territory/distance match for this stop," not a real per-date calendar check.
+  let scheduleLayers = []; // markers + lines drawn for the uploaded schedule, cleared on reset
+
+  function setScheduleStatus(msg, isError) {
+    scheduleStatusEl.textContent = msg || '';
+    scheduleStatusEl.classList.toggle('error', !!isError);
+  }
+
+  function findColumn(headerRow, keywords) {
+    for (let i = 0; i < headerRow.length; i++) {
+      const h = String(headerRow[i] || '').toLowerCase();
+      if (keywords.some(k => h.includes(k))) return i;
+    }
+    return -1;
+  }
+
+  function nearestNeighborOrder(points) {
+    // points: array of {lat, lon, ...}; returns a reordered array starting from points[0]
+    const remaining = points.slice(1);
+    const order = [points[0]];
+    let current = points[0];
+    while (remaining.length) {
+      let bestIdx = 0, bestDist = Infinity;
+      remaining.forEach((p, i) => {
+        const d = haversineMiles(current.lat, current.lon, p.lat, p.lon);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      });
+      current = remaining.splice(bestIdx, 1)[0];
+      order.push(current);
+    }
+    return order;
+  }
+
+  function suggestTechniciansFor(loc) {
+    const pool = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t) && t.available && t.lat != null);
+    const order = { primary: 0, secondary: 1, outside: 2 };
+    return pool.map(t => {
+      const dist = haversineMiles(loc.lat, loc.lon, t.lat, t.lon);
+      const zone = classifyZoneMatch(t, loc.lat, loc.lon);
+      return { t, dist, zone };
+    }).sort((a, b) => (order[a.zone.level] - order[b.zone.level]) || (a.dist - b.dist)).slice(0, 3);
+  }
+
+  function clearScheduleLayers() {
+    scheduleLayers.forEach(l => map.removeLayer(l));
+    scheduleLayers = [];
+  }
+
+  async function processScheduleFile(file) {
+    setScheduleStatus('Reading file…');
+    scheduleClearBtn.style.display = 'none';
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+      if (!rows.length) throw new Error('The file appears to be empty.');
+
+      const header = rows[0];
+      let dateCol = findColumn(header, ['date']);
+      let addrCol = findColumn(header, ['address', 'location', 'site', 'job']);
+      if (dateCol === -1) dateCol = 0;
+      if (addrCol === -1) addrCol = (dateCol === 1 ? 0 : 1);
+
+      const jobs = rows.slice(1)
+        .map(r => ({ date: String(r[dateCol] || '').trim(), address: String(r[addrCol] || '').trim() }))
+        .filter(j => j.address);
+
+      if (!jobs.length) throw new Error('No rows with an address were found.');
+
+      setScheduleStatus('<span class="spinner"></span>Locating ' + jobs.length + ' address(es)…');
+
+      const byDate = {};
+      for (const j of jobs) {
+        const key = j.date || '(no date given)';
+        if (!byDate[key]) byDate[key] = [];
+        try {
+          const loc = await resolveOneAddress(j.address);
+          byDate[key].push({ ...loc, label: j.address });
+        } catch (e) {
+          byDate[key].push({ lat: null, lon: null, label: j.address, failed: true });
+        }
+      }
+
+      renderScheduleResults(byDate);
+      setScheduleStatus(jobs.length + ' job(s) across ' + Object.keys(byDate).length + ' date(s) processed.');
+      scheduleClearBtn.style.display = 'block';
+    } catch (err) {
+      setScheduleStatus('Could not process file: ' + err.message, true);
+    }
+  }
+
+  function renderScheduleResults(byDate) {
+    clearMarkers();
+    clearScheduleLayers();
+    listEl.innerHTML = '';
+
+    const note = document.createElement('div');
+    note.style.cssText = 'padding:8px 20px;font-size:11px;color:var(--ink-soft);border-bottom:1px solid var(--line);background:#fdf3e3;';
+    note.textContent = '\u26A0 "Suggested" technicians are the closest active, territory-appropriate matches — Confluence has no day-by-day availability data, so this isn\'t a real-time calendar check.';
+    listEl.appendChild(note);
+
+    const allBounds = [];
+    let colorIdx = 0;
+
+    Object.keys(byDate).forEach(dateKey => {
+      const stops = byDate[dateKey].filter(s => s.lat != null);
+      const failedStops = byDate[dateKey].filter(s => s.lat == null);
+      if (!stops.length) return;
+
+      const ordered = stops.length > 1 ? nearestNeighborOrder(stops) : stops;
+      let totalMiles = 0;
+      for (let i = 0; i < ordered.length - 1; i++) {
+        totalMiles += haversineMiles(ordered[i].lat, ordered[i].lon, ordered[i + 1].lat, ordered[i + 1].lon);
+      }
+
+      const dateColor = GROUP_PALETTE[colorIdx % GROUP_PALETTE.length];
+      colorIdx++;
+
+      const dateHeader = document.createElement('div');
+      dateHeader.className = 'schedule-date-header';
+      dateHeader.innerHTML = dateKey + (ordered.length > 1
+        ? ' <span class="schedule-date-total">&middot; ' + ordered.length + ' stops, ' + totalMiles.toFixed(1) + ' mi optimized route</span>'
+        : '');
+      listEl.appendChild(dateHeader);
+
+      if (failedStops.length) {
+        const warn = document.createElement('div');
+        warn.style.cssText = 'padding:6px 20px;font-size:11px;color:var(--unavailable);';
+        warn.textContent = 'Could not locate: ' + failedStops.map(s => s.label).join('; ');
+        listEl.appendChild(warn);
+      }
+
+      const latlngs = ordered.map(s => [s.lat, s.lon]);
+      allBounds.push(...latlngs);
+
+      if (ordered.length > 1) {
+        const line = L.polyline(latlngs, { color: dateColor, weight: 2.5, opacity: 0.75, dashArray: '6,6' }).addTo(map);
+        scheduleLayers.push(line);
+      }
+
+      ordered.forEach((stop, i) => {
+        const marker = L.marker([stop.lat, stop.lon], { icon: pinIcon(i + 1, dateColor) }).addTo(map);
+        marker.bindPopup('<b>' + dateKey + ' — Stop ' + (i + 1) + '</b>' + stop.label);
+        scheduleLayers.push(marker);
+
+        const card = document.createElement('div');
+        card.className = 'schedule-stop-card';
+        const legText = i === 0 ? '' : haversineMiles(ordered[i - 1].lat, ordered[i - 1].lon, stop.lat, stop.lon).toFixed(1) + ' mi from previous stop';
+        const suggestions = suggestTechniciansFor(stop);
+        card.innerHTML =
+          '<div class="schedule-stop-top"><span>Stop ' + (i + 1) + ': ' + stop.label + '</span></div>' +
+          (legText ? '<div class="schedule-stop-leg">' + legText + '</div>' : '') +
+          (suggestions.length
+            ? suggestions.map((s, rank) =>
+                '<div class="schedule-suggestion"><span class="s-rank">#' + (rank + 1) + '</span>' + s.t.name +
+                ' — ' + s.dist.toFixed(1) + ' mi &middot; <span class="zone-badge zone-' + s.zone.level + '" style="margin-top:0;">' + s.zone.label + '</span></div>'
+              ).join('')
+            : '<div class="schedule-suggestion">No active technicians match current filters for this stop.</div>');
+        listEl.appendChild(card);
+      });
+    });
+
+    if (allBounds.length > 1) map.fitBounds(allBounds, { padding: [40, 40] });
+    else if (allBounds.length === 1) map.setView(allBounds[0], 11);
+  }
+
+  scheduleFileInput.addEventListener('change', () => {
+    const file = scheduleFileInput.files[0];
+    if (file) processScheduleFile(file);
+  });
+
+  scheduleClearBtn.addEventListener('click', () => {
+    clearScheduleLayers();
+    scheduleFileInput.value = '';
+    setScheduleStatus('');
+    scheduleClearBtn.style.display = 'none';
+    rebuildGroupColors();
+    refreshMapAndList();
+  });
+
+  searchBtn.addEventListener('click', runSearch);
+  addressInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  routeSearchBtn.addEventListener('click', runRoute);
+
+  // Initial load: use saved data (cached geocodes, or the embedded Confluence snapshot the first time)
+  loadTechnicians();
+  rebuildGroupColors();
+  refreshMapAndList();
+  const initialPts = technicians.filter(t => t.lat != null).map(t => [t.lat, t.lon]);
+  if (initialPts.length > 1) map.fitBounds(initialPts, { padding: [40, 40] });
+})();
+</script>
