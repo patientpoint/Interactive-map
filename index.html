@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Technician Finder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233d5a80' d='M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8z'/%3E%3Ccircle cx='12' cy='10' r='3.2' fill='%23fff'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -71,12 +78,41 @@
     gap: 8px;
   }
 
+  #filter-bar-toggle {
+    padding: 8px 20px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+  }
+
+  #filter-bar-toggle:hover { color: var(--accent); }
+
   #filter-bar {
+    display: none;
     padding: 12px 20px;
     border-bottom: 1px solid var(--line);
-    display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  #filter-bar.open { display: flex; }
+
+  #schedule-toggle-row {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #schedule-toggle-btn {
+    width: 100%;
+  }
+
+  #schedule-toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
   }
 
   .dropdown-field {
@@ -193,16 +229,12 @@
   #schedule-box {
     padding: 14px 20px;
     border-bottom: 1px solid var(--line);
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 6px;
   }
 
-  #schedule-box-label {
-    font-size: 11.5px;
-    color: var(--ink-soft);
-    font-weight: 600;
-  }
+  #schedule-box.visible { display: flex; }
 
   #schedule-box-hint {
     font-size: 10.5px;
@@ -210,17 +242,195 @@
     line-height: 1.4;
   }
 
+  #schedule-file-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   #schedule-file-input {
     font-size: 12px;
     font-family: var(--sans);
+    max-width: 100%;
   }
 
-  #schedule-status {
+  #schedule-remove-file-btn {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    border: 1px solid var(--unavailable);
+    background: #fff;
+    color: var(--unavailable);
+    cursor: pointer;
+    font-family: var(--sans);
+    flex-shrink: 0;
+  }
+
+  #schedule-remove-file-btn:hover { background: var(--unavailable-bg); }
+
+  #schedule-column-picker {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    background: #eef4f8;
+    border-radius: 7px;
+  }
+
+  #schedule-column-picker.visible { display: flex; }
+
+  #schedule-date-col-select, #schedule-addr-col-select {
+    font-size: 12.5px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: var(--sans);
+    color: var(--ink);
+    background: #fff;
+    margin-bottom: 4px;
+  }
+
+  .schedule-radio-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 3px 0;
+    cursor: pointer;
+  }
+
+  #mileage-toggle-row {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #mileage-toggle-btn {
+    width: 100%;
+  }
+
+  #mileage-toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  #mileage-box {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    background: #fafbfc;
+  }
+
+  #mileage-box.visible { display: flex; }
+
+  #mileage-box-label {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .waypoint-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .waypoint-letter {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .waypoint-row input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: var(--sans);
+    color: var(--ink);
+  }
+
+  .waypoint-row input:focus { border-color: var(--accent); outline: none; }
+
+  .waypoint-remove-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .waypoint-remove-btn:hover { color: var(--unavailable); }
+
+  #mileage-status {
     font-size: 11.5px;
     color: var(--ink-soft);
   }
 
-  #schedule-status.error { color: var(--unavailable); }
+  #mileage-status.error { color: var(--unavailable); }
+
+  #mileage-results {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mileage-leg-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  .mileage-leg-row .leg-label { color: var(--ink-soft); }
+  .mileage-leg-row .leg-dist { font-weight: 600; font-family: var(--mono); }
+
+  .mileage-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 0 2px;
+  }
+
+  #schedule-status {
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 1px;
+  }
+
+  #schedule-status:not(:empty) {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #eef4f8;
+    color: var(--accent-dark);
+    font-weight: 500;
+  }
+
+  #schedule-status.error {
+    background: var(--unavailable-bg);
+    color: var(--unavailable);
+  }
 
   .schedule-date-header {
     padding: 10px 20px 4px;
@@ -252,6 +462,15 @@
   .schedule-stop-leg {
     font-size: 10.5px;
     color: var(--ink-soft);
+  }
+
+  .schedule-stop-leg.far-apart {
+    color: var(--unavailable);
+    font-weight: 600;
+    background: var(--unavailable-bg);
+    padding: 3px 6px;
+    border-radius: 4px;
+    margin-top: 3px;
   }
 
   .schedule-suggestion {
@@ -329,6 +548,13 @@
     font-family: var(--sans);
   }
 
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    margin-right: 2px;
+  }
+
   .btn-primary {
     background: var(--accent);
     color: #fff;
@@ -349,16 +575,6 @@
 
   .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
-  #refresh-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    border-bottom: 1px solid var(--line);
-    font-size: 11.5px;
-    color: var(--ink-soft);
-  }
-
   #status-line {
     padding: 10px 20px;
     font-size: 12.5px;
@@ -370,34 +586,6 @@
   #status-line.visible { display: block; }
 
   #status-line.error { color: var(--unavailable); }
-
-  #territory-legend-toggle {
-    padding: 6px 20px;
-    font-size: 10.5px;
-    color: var(--ink-soft);
-    border-bottom: 1px solid var(--line);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  #territory-legend-toggle:hover { color: var(--accent); }
-
-  #territory-legend {
-    display: none;
-    padding: 8px 20px;
-    font-size: 10.5px;
-    color: var(--ink-soft);
-    border-bottom: 1px solid var(--line);
-    line-height: 1.8;
-  }
-
-  #territory-legend.open { display: block; }
-
-  #territory-legend .zone-badge {
-    padding: 1px 6px;
-    margin-top: 0;
-    font-size: 10px;
-  }
 
   #tech-list {
     flex: 1;
@@ -423,9 +611,78 @@
     gap: 8px;
   }
 
+  .tech-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fav-star {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #c7ccd2;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .fav-star svg { width: 15px; height: 15px; }
+  .fav-star:hover { color: #d4a017; }
+  .fav-star.active { color: #d4a017; }
+
   .tech-name {
     font-size: 14px;
     font-weight: 600;
+  }
+
+  .personal-note-row { margin-top: 4px; }
+
+  .note-toggle-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+
+  .note-toggle-btn:hover { text-decoration: underline; }
+
+  .personal-note-box {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .personal-note-box.hidden { display: none; }
+
+  .personal-note-input {
+    width: 100%;
+    min-height: 50px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: var(--sans);
+    color: var(--ink);
+    resize: vertical;
+    background: #fffbea;
+  }
+
+  .note-save-btn {
+    align-self: flex-start;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--sans);
   }
 
   .tech-distance {
@@ -598,6 +855,146 @@
     box-shadow: inset 3px 0 0 var(--accent);
   }
 
+  #schedule-map-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 22, 31, 0.55);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #schedule-map-modal.open { display: flex; }
+
+  #schedule-map-card {
+    width: min(94vw, 960px);
+    height: min(85vh, 600px);
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+
+  #schedule-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    flex-shrink: 0;
+    background: #fafbfc;
+  }
+
+  #schedule-map-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  #schedule-map-close:hover { color: var(--ink); }
+
+  #schedule-map-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  #schedule-map {
+    flex: 1;
+    min-height: 0;
+  }
+
+  #schedule-map-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--line);
+    overflow-y: auto;
+    background: #fff;
+  }
+
+  .sms-group {
+    padding: 18px 18px 6px;
+    border-bottom: 8px solid #f4f6f8;
+  }
+
+  .sms-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+
+  .sms-verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 12px;
+    padding: 10px 11px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+
+  .sms-verdict .sms-verdict-icon { flex-shrink: 0; font-size: 13px; line-height: 1.4; }
+
+  .sms-verdict.ok { background: var(--available-bg); color: #0b5c5e; }
+  .sms-verdict.partial { background: #fdf3e3; color: #7a5309; }
+  .sms-verdict.bad { background: var(--unavailable-bg); color: #8f3d42; }
+
+  .sms-stop {
+    display: flex;
+    gap: 10px;
+    padding: 12px 0;
+    border-top: 1px solid #eef0f2;
+  }
+
+  .sms-stop:first-of-type { border-top: none; }
+
+  .sms-stop-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .sms-stop-body { min-width: 0; flex: 1; }
+
+  .sms-stop .sms-stop-name {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.35;
+    margin-bottom: 4px;
+  }
+
+  .sms-stop .sms-stop-tech {
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+
+  .sms-stop .sms-stop-tech b { color: var(--ink); font-weight: 600; }
+
   #map-key-panel {
     width: 240px;
     flex-shrink: 0;
@@ -732,7 +1129,43 @@
     font-size: 10.5px;
   }
 
-  .leaflet-popup-content { font-family: var(--sans); font-size: 13px; }
+  #map-key-territory-legend {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2c3644;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #map-key-territory-title {
+    font-size: 10px;
+    color: #9aa5b1;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+  }
+
+  .mkt-row {
+    font-size: 11px;
+    color: #c3cad2;
+    line-height: 1.5;
+  }
+
+  .mkt-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 100px;
+    margin-right: 4px;
+  }
+
+  .mkt-badge.mkt-primary { background: #123f3f; color: #6fd6cf; }
+  .mkt-badge.mkt-secondary { background: #4a3a12; color: #f0c674; }
+
+  .leaflet-popup-content { font-family: var(--sans); font-size: 12px; margin: 10px 12px; line-height: 1.4; }
+  .leaflet-popup-content b { font-size: 12.5px; }
+  .leaflet-popup-content-wrapper { border-radius: 8px; }
 
   .leaflet-control-attribution {
     font-size: 9px;
@@ -814,16 +1247,35 @@
     #map-container { height: 35%; width: 100%; }
     #map-key-panel { width: 100%; height: 20%; border-left: none; border-top: 1px solid #10161f; }
     #map-key-body { max-height: 140px; }
+    #schedule-map-card { width: 96vw; height: 90vh; }
+    #schedule-map-body { flex-direction: column; }
+    #schedule-map { height: 55%; }
+    #schedule-map-sidebar { width: 100%; height: 45%; border-left: none; border-top: 1px solid var(--line); }
+  }
+
+  @media print {
+    #map-container, #map-key-panel, #filter-bar-toggle, #filter-bar, #search-mode-field,
+    #search-box, #route-box, #mileage-toggle-row, #mileage-box, #schedule-toggle-row,
+    #schedule-box, #unmapped-toggle, #unmapped-list,
+    .copy-btn, .fav-star, .note-toggle-btn, .personal-note-box, #status-line {
+      display: none !important;
+    }
+    #app { display: block; height: auto; }
+    #sidebar { width: 100%; overflow: visible; }
+    #tech-list { overflow: visible; }
+    .tech-card { break-inside: avoid; page-break-inside: avoid; }
   }
 </style>
+</head>
+<body>
 
 <div id="app">
   <div id="sidebar">
     <header>
       <h1>Technician Finder</h1>
-      <p>Active roster &amp; territory, pulled from Confluence</p>
     </header>
 
+    <div id="filter-bar-toggle">Filters: technician type, skills, capacity &#9662;</div>
     <div id="filter-bar">
       <div class="dropdown-field">
         <label class="dropdown-label">Technician type</label>
@@ -874,33 +1326,51 @@
     </div>
 
     <div id="route-box">
-      <div id="route-box-label">Multi-stop route — paste each job address on its own line</div>
-      <textarea id="route-input" rows="3" placeholder="123 Main St, Tampa FL&#10;45 Oak Ave, Orlando FL&#10;9 Pine Rd, Lakeland FL"></textarea>
+      <div id="route-box-label">Multi-stop route — enter each job address</div>
+      <div id="route-waypoints"></div>
+      <button id="route-add-btn" class="btn-ghost btn" type="button">+ Add stop</button>
       <button id="route-search-btn" class="btn btn-primary">Find technician for route</button>
     </div>
 
-    <div id="schedule-box">
-      <div id="schedule-box-label">Upload a job schedule (CSV or Excel)</div>
-      <div id="schedule-box-hint">Needs a date column and an address column — headers can be named anything containing "date" / "address".</div>
-      <input type="file" id="schedule-file-input" accept=".csv,.xlsx,.xls" />
-      <div id="schedule-status"></div>
-      <button id="schedule-clear-btn" class="btn-ghost btn" style="display:none;">Clear schedule &amp; return to search</button>
+    <div id="mileage-toggle-row">
+      <button id="mileage-toggle-btn" class="btn-ghost btn" type="button"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 7v3M10 7v5M14 7v3M18 7v5"/></svg> Mileage Calculator</button>
     </div>
 
-    <div id="refresh-row">
-      <span id="last-synced">Loading saved data…</span>
+    <div id="mileage-box">
+      <div id="mileage-box-label">Mileage calculator — enter stops in order</div>
+      <div id="mileage-waypoints"></div>
+      <button id="mileage-add-btn" class="btn-ghost btn" type="button">+ Add stop</button>
+      <button id="mileage-calc-btn" class="btn btn-primary" type="button">Calculate mileage</button>
+      <div id="mileage-status"></div>
+      <div id="mileage-results"></div>
+    </div>
+
+    <div id="schedule-toggle-row">
+      <button id="schedule-toggle-btn" class="btn-ghost btn" type="button"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15h6"/></svg> Upload a job schedule (CSV/Excel)</button>
+    </div>
+
+    <div id="schedule-box">
+      <div id="schedule-box-hint">Needs an address column (headers can be named anything containing "address"). A date column is only used if you choose "Separate route per date" below.</div>
+      <div id="schedule-file-row">
+        <input type="file" id="schedule-file-input" accept=".csv,.xlsx,.xls" />
+        <button id="schedule-remove-file-btn" type="button" style="display:none;">Remove file</button>
+      </div>
+      <div id="schedule-column-picker">
+        <label class="dropdown-label">Date column</label>
+        <select id="schedule-date-col-select"></select>
+        <label class="dropdown-label">Address column</label>
+        <select id="schedule-addr-col-select"></select>
+        <label class="dropdown-label">Route grouping</label>
+        <label class="schedule-radio-row"><input type="radio" name="schedule-grouping" value="date" /> Separate route per date</label>
+        <label class="schedule-radio-row"><input type="radio" name="schedule-grouping" value="all" checked /> One single route across every address</label>
+      </div>
+      <button id="schedule-process-btn" class="btn btn-primary" type="button" disabled>Process schedule</button>
+      <div id="schedule-status"></div>
+      <button id="schedule-view-map-btn" class="btn-ghost btn" style="display:none;">View route map</button>
+      <button id="schedule-clear-btn" class="btn-ghost btn" style="display:none;">Clear results &amp; return to search</button>
     </div>
 
     <div id="status-line"></div>
-
-    <div id="territory-legend-toggle">Legend: primary/secondary territory &amp; map dots &#9662;</div>
-    <div id="territory-legend">
-      <span class="zone-badge zone-primary">Primary</span> &le; 60 min from home, reliable
-      &nbsp;&middot;&nbsp;
-      <span class="zone-badge zone-secondary">Secondary</span> travels there, trip fee likely
-      <br/>
-      Map dots: thick purple ring = W2 employee &middot; thin ring = 1099 contractor
-    </div>
 
     <div id="tech-list">
       <div id="empty-state">
@@ -941,6 +1411,26 @@
         <button id="map-key-showall" type="button">Show all</button>
       </div>
       <div id="map-key-legend"></div>
+
+      <div id="map-key-territory-legend">
+        <div id="map-key-territory-title">Territory &amp; map dots</div>
+        <div class="mkt-row"><span class="mkt-badge mkt-primary">Primary</span> &le; 60 min from home, reliable</div>
+        <div class="mkt-row"><span class="mkt-badge mkt-secondary">Secondary</span> travels there, trip fee likely</div>
+        <div class="mkt-row">Thick purple ring = W2 &middot; thin ring = 1099</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="schedule-map-modal">
+  <div id="schedule-map-card">
+    <div id="schedule-map-header">
+      <span id="schedule-map-title">Job Schedule Route</span>
+      <button id="schedule-map-close" type="button" title="Close">&times;</button>
+    </div>
+    <div id="schedule-map-body">
+      <div id="schedule-map"></div>
+      <div id="schedule-map-sidebar"></div>
     </div>
   </div>
 </div>
@@ -1351,20 +1841,18 @@ function lookupGazetteer(input) {
 
   const listEl = document.getElementById('tech-list');
   const statusEl = document.getElementById('status-line');
-  const lastSyncedEl = document.getElementById('last-synced');
   const searchBtn = document.getElementById('search-btn');
   const addressInput = document.getElementById('address-input');
-  const routeInput = document.getElementById('route-input');
+  const routeWaypointsEl = document.getElementById('route-waypoints');
+  const routeAddBtn = document.getElementById('route-add-btn');
   const routeSearchBtn = document.getElementById('route-search-btn');
   const scheduleFileInput = document.getElementById('schedule-file-input');
+  const scheduleRemoveFileBtn = document.getElementById('schedule-remove-file-btn');
+  const scheduleProcessBtn = document.getElementById('schedule-process-btn');
   const scheduleStatusEl = document.getElementById('schedule-status');
   const scheduleClearBtn = document.getElementById('schedule-clear-btn');
+  const scheduleViewMapBtn = document.getElementById('schedule-view-map-btn');
   const unmappedToggle = document.getElementById('unmapped-toggle');
-  const territoryLegendToggle = document.getElementById('territory-legend-toggle');
-  const territoryLegendEl = document.getElementById('territory-legend');
-  territoryLegendToggle.addEventListener('click', () => {
-    territoryLegendEl.classList.toggle('open');
-  });
   const unmappedList = document.getElementById('unmapped-list');
   const unmappedCount = document.getElementById('unmapped-count');
   const capacityFilterEl = document.getElementById('capacity-filter');
@@ -1383,6 +1871,7 @@ function lookupGazetteer(input) {
   let groupColorMap = {}; // value -> color, rebuilt whenever groupBy or the dataset changes
 
   const GROUP_PALETTE = ['#e63946', '#f4a261', '#2a9d8f', '#8e44ad', '#3d5a80', '#e91e8c', '#5aa469', '#c9a227', '#457b9d', '#a05195', '#e07a5f', '#4a5859'];
+  const SCHEDULE_ROUTE_PALETTE = ['#3d5a80', '#5b8266', '#9c6b4f', '#6b5b95', '#4a7a8c', '#8a6d3b', '#5c6b73', '#7a5c6b'];
 
   function extractState(address) {
     const m = address.match(/,\s*([A-Za-z]{2})\b\s*\d{0,5}\s*$/) || address.match(/,\s*([A-Za-z]{2})\.?\s*$/);
@@ -1526,21 +2015,36 @@ function lookupGazetteer(input) {
   const searchModeSelect = document.getElementById('search-mode-select');
   const searchBoxEl = document.getElementById('search-box');
   const routeBoxEl = document.getElementById('route-box');
+  const mileageBoxEl = document.getElementById('mileage-box');
+  const mileageToggleBtn = document.getElementById('mileage-toggle-btn');
   searchModeSelect.addEventListener('change', () => {
     const mode = searchModeSelect.value;
-    if (mode === 'route') {
-      searchBoxEl.style.display = 'none';
-      routeBoxEl.style.display = 'flex';
-    } else {
-      searchBoxEl.style.display = 'flex';
-      routeBoxEl.style.display = 'none';
-      addressInput.placeholder = mode === 'name'
-        ? "Enter a technician's name, e.g. Jim Morris"
-        : 'Enter a job address, e.g. Tampa FL or 123 Main St';
-    }
+    searchBoxEl.style.display = mode === 'address' || mode === 'name' ? 'flex' : 'none';
+    routeBoxEl.style.display = mode === 'route' ? 'flex' : 'none';
+    if (mode === 'name') addressInput.placeholder = "Enter a technician's name, e.g. Jim Morris";
+    else if (mode === 'address') addressInput.placeholder = 'Enter a job address, e.g. Tampa FL or 123 Main St';
   });
   // Route box starts hidden — "Address" is the default search mode
   routeBoxEl.style.display = 'none';
+
+  mileageToggleBtn.addEventListener('click', () => {
+    const nowVisible = mileageBoxEl.classList.toggle('visible');
+    mileageToggleBtn.classList.toggle('active', nowVisible);
+    if (nowVisible && !mileageInitialized) initMileageCalculator();
+  });
+
+  const filterBarToggle = document.getElementById('filter-bar-toggle');
+  const filterBarEl = document.getElementById('filter-bar');
+  filterBarToggle.addEventListener('click', () => {
+    filterBarEl.classList.toggle('open');
+  });
+
+  const scheduleToggleBtn = document.getElementById('schedule-toggle-btn');
+  const scheduleBoxEl = document.getElementById('schedule-box');
+  scheduleToggleBtn.addEventListener('click', () => {
+    const nowVisible = scheduleBoxEl.classList.toggle('visible');
+    scheduleToggleBtn.classList.toggle('active', nowVisible);
+  });
 
   function matchesFilters(t) {
     if (classificationFilter !== 'all' && !t.skills.includes(classificationFilter)) return false;
@@ -1671,11 +2175,42 @@ function lookupGazetteer(input) {
     return list;
   }
 
-  function loadTechnicians() {
-    // Fully offline: coordinates are baked into EMBEDDED_TECHNICIANS above, so this
-    // requires zero network calls and zero storage lookups. Instant every time.
+  async function loadTechnicians() {
+    // Preferred path: technicians-data.json, produced by the GitHub Actions Confluence sync
+    // (see .github/workflows/sync-confluence.yml). It already has lat/lon baked in from that
+    // Action's own geocoding step, so this stays just as fast as the fully-offline fallback.
+    try {
+      const res = await fetch('technicians-data.json', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.technicians) && data.technicians.length) {
+          technicians = data.technicians.map(t => ({
+            name: t.name,
+            address: t.address,
+            territory: t.territory || '',
+            skills: Array.isArray(t.skills) ? t.skills : [],
+            available: t.available !== false,
+            lat: typeof t.lat === 'number' ? t.lat : null,
+            lon: typeof t.lon === 'number' ? t.lon : null,
+            radiusMiles: RADIUS_OVERRIDES_MI[t.name] || 50,
+            phone: PHONE_NUMBERS[t.name] || null,
+            email: EMAIL_ADDRESSES[t.name] || null,
+            notes: TECH_NOTES[t.name] || null,
+            capacityPerDay: CAPACITY_PER_DAY[t.name] || null,
+            fqc: FQC_COORDINATORS[t.name] || null
+          }));
+          setStatus('');
+          console.log('Loaded', technicians.length, 'technicians from technicians-data.json (generated ' + (data.generatedAt || 'unknown time') + ')');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load technicians-data.json, using the offline snapshot instead:', e.message);
+    }
+
+    // Fallback: fully offline embedded snapshot — used if technicians-data.json doesn't
+    // exist yet, failed to load, or came back empty.
     technicians = EMBEDDED_TECHNICIANS.map(t => ({ ...t }));
-    lastSyncedEl.textContent = 'Loaded (offline snapshot, 2026-09-16)';
     setStatus('');
   }
 
@@ -1829,6 +2364,28 @@ function lookupGazetteer(input) {
     return { level: 'outside', label: 'Outside stated territory \u2014 confirm before dispatch' };
   }
 
+  // ---- Personal favorites & notes (stored locally in this browser only — see local
+  // storage caveat: not shared between teammates, since this is a static file with no backend).
+  function getFavorites() {
+    try { return JSON.parse(localStorage.getItem('techFavorites') || '[]'); } catch (e) { return []; }
+  }
+  function isFavorite(name) { return getFavorites().includes(name); }
+  function toggleFavorite(name) {
+    const favs = getFavorites();
+    const idx = favs.indexOf(name);
+    if (idx === -1) favs.push(name); else favs.splice(idx, 1);
+    try { localStorage.setItem('techFavorites', JSON.stringify(favs)); } catch (e) { /* storage unavailable */ }
+  }
+  function getPersonalNotes() {
+    try { return JSON.parse(localStorage.getItem('techPersonalNotes') || '{}'); } catch (e) { return {}; }
+  }
+  function getPersonalNote(name) { return getPersonalNotes()[name] || ''; }
+  function setPersonalNote(name, text) {
+    const notes = getPersonalNotes();
+    if (text.trim()) notes[name] = text.trim(); else delete notes[name];
+    try { localStorage.setItem('techPersonalNotes', JSON.stringify(notes)); } catch (e) { /* storage unavailable */ }
+  }
+
   function buildCardHTML(t, opts) {
     opts = opts || {};
     const distBlock = opts.distText
@@ -1842,14 +2399,25 @@ function lookupGazetteer(input) {
       : '';
     const contactHTML = [phoneHTML, emailHTML].filter(Boolean).join(' &middot; ');
     const capacityText = t.capacityPerDay ? t.capacityPerDay + ' SA/day (stated)' : null;
+    const favActive = isFavorite(t.name);
+    const personalNote = getPersonalNote(t.name);
     return (
-      '<div class="tech-top"><span class="tech-name">' + t.name + '</span>' + distBlock + '</div>' +
+      '<div class="tech-top">' +
+      '<span class="tech-name-row"><button class="fav-star' + (favActive ? ' active' : '') + '" type="button" title="Favorite">' +
+      '<svg viewBox="0 0 24 24" fill="' + (favActive ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/></svg>' +
+      '</button><span class="tech-name">' + t.name + '</span></span>' + distBlock + '</div>' +
       '<div class="tech-address">' + t.address + (contactHTML ? ' &middot; ' + contactHTML : '') + '</div>' +
       (t.territory ? '<div class="tech-territory">' + t.territory + ' &middot; ~' + t.radiusMiles + ' mi coverage' +
         (capacityText ? ' &middot; ' + capacityText : '') + '</div>' : '') +
       (opts.zoneBadgeHTML || '') +
       (opts.routeStopsHTML || '') +
       (t.notes ? '<div class="tech-notes">\u26A0 ' + t.notes + '</div>' : '') +
+      '<div class="personal-note-row">' +
+      '<button class="note-toggle-btn" type="button">' + (personalNote ? '\u270e Edit personal note' : '+ Add personal note') + '</button>' +
+      '<div class="personal-note-box' + (personalNote ? '' : ' hidden') + '">' +
+      '<textarea class="personal-note-input" placeholder="Only visible to you, saved in this browser...">' + personalNote + '</textarea>' +
+      '<button class="note-save-btn" type="button">Save</button>' +
+      '</div></div>' +
       '<div class="tech-meta">' +
       '<span>' + t.skills.map(s => {
         const isClass = s === '1099' || s === 'W2';
@@ -1890,16 +2458,42 @@ function lookupGazetteer(input) {
 
   function attachCardHandlers(card, t) {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.copy-btn')) return; // don't trigger territory view when copying
+      if (e.target.closest('.copy-btn, .fav-star, .note-toggle-btn, .note-save-btn, .personal-note-input')) return;
       showTerritory(t);
     });
     const copyBtn = card.querySelector('.copy-btn');
     if (copyBtn) copyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyDispatchInfo(t, copyBtn); });
+
+    const favBtn = card.querySelector('.fav-star');
+    if (favBtn) favBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(t.name);
+      favBtn.classList.toggle('active');
+      const svg = favBtn.querySelector('svg');
+      svg.setAttribute('fill', favBtn.classList.contains('active') ? 'currentColor' : 'none');
+    });
+
+    const noteToggleBtn = card.querySelector('.note-toggle-btn');
+    const noteBox = card.querySelector('.personal-note-box');
+    if (noteToggleBtn) noteToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      noteBox.classList.toggle('hidden');
+    });
+    const noteSaveBtn = card.querySelector('.note-save-btn');
+    const noteInput = card.querySelector('.personal-note-input');
+    if (noteSaveBtn) noteSaveBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setPersonalNote(t.name, noteInput.value);
+      noteToggleBtn.textContent = noteInput.value.trim() ? '\u270e Edit personal note' : '+ Add personal note';
+      noteBox.classList.add('hidden');
+    });
   }
 
   function renderDirectory() {
     lastSearchLocs = null;
-    const filtered = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t)).sort((a, b) => a.name.localeCompare(b.name));
+    const favs = getFavorites();
+    const filtered = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t))
+      .sort((a, b) => (favs.includes(b.name) - favs.includes(a.name)) || a.name.localeCompare(b.name));
     listEl.innerHTML = '';
     if (!filtered.length) {
       listEl.innerHTML = '<div id="empty-state">No technicians match the selected filters.</div>';
@@ -1995,6 +2589,48 @@ function lookupGazetteer(input) {
     return loc;
   }
 
+  function stripSuiteInfo(address) {
+    // Removes "Suite 150", "Ste 206.", "Unit A1 Lowr", "Bldg A", "Apt 3", "# 12", etc. —
+    // these unit/building descriptors are exactly what trips up free-text geocoders, even
+    // when the underlying street address is perfectly real and correct.
+    return address
+      .replace(/,?\s*\b(suite|ste\.?|unit|bldg\.?|building|apt\.?|apartment|#)\b[^,]*/gi, '')
+      .replace(/,\s*,/g, ',')
+      .replace(/\s+/g, ' ')
+      .replace(/^\s*,|,\s*$/g, '')
+      .trim();
+  }
+
+  async function resolveAddressWithFallback(address) {
+    try {
+      return await resolveOneAddress(address);
+    } catch (fullErr) {
+      // Tier 2: strip suite/unit/building text but keep the real street address — much more
+      // precise than jumping straight to a city-level guess.
+      const stripped = stripSuiteInfo(address);
+      if (stripped && stripped.toLowerCase() !== address.toLowerCase()) {
+        try {
+          const loc = await resolveOneAddress(stripped);
+          return { ...loc, approximate: true };
+        } catch (strippedErr) { /* fall through to tier 3 */ }
+      }
+
+      // Tier 3: just "City, ST ZIP" pulled from the end of the string — least precise, but
+      // far more likely to succeed than a long, oddly-formatted full address.
+      const m = address.match(/([A-Za-z .'-]+),?\s*([A-Za-z]{2})\s*(\d{5})?\s*$/);
+      if (m) {
+        const simplified = m[1].trim() + ', ' + m[2] + (m[3] ? ' ' + m[3] : '');
+        if (simplified.toLowerCase() !== address.toLowerCase()) {
+          try {
+            const loc = await resolveOneAddress(simplified);
+            return { ...loc, approximate: true };
+          } catch (fallbackErr) { /* fall through to original error */ }
+        }
+      }
+      throw fullErr;
+    }
+  }
+
   function findTechnicianMatches(query) {
     const q = query.toLowerCase().trim();
     if (q.length < 2) return [];
@@ -2039,7 +2675,7 @@ function lookupGazetteer(input) {
     return L.divIcon({
       className: '',
       html:
-        '<div style="position:relative;width:28px;height:38px;">' +
+        '<div style="position:relative;width:28px;height:40px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35));">' +
           '<svg width="28" height="38" viewBox="0 0 28 38" xmlns="http://www.w3.org/2000/svg">' +
             '<path d="M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z" fill="' + color + '" stroke="#fff" stroke-width="1.5"/>' +
             '<circle cx="14" cy="14" r="6" fill="#fff"/>' +
@@ -2060,7 +2696,7 @@ function lookupGazetteer(input) {
       const failed = [];
       for (const line of addressLines) {
         try {
-          locs.push({ ...(await resolveOneAddress(line)), label: line });
+          locs.push({ ...(await resolveAddressWithFallback(line)), label: line });
         } catch (e) {
           failed.push(line);
         }
@@ -2125,7 +2761,7 @@ function lookupGazetteer(input) {
       setStatus('Enter an address or a technician name.', true);
       return;
     }
-    if (technicians.length === 0) loadTechnicians();
+    if (technicians.length === 0) await loadTechnicians();
     if (technicians.length === 0) return;
 
     // If this looks like a technician's name rather than an address, jump straight to them
@@ -2140,16 +2776,43 @@ function lookupGazetteer(input) {
     await locateAndRender([raw], false, searchBtn);
   }
 
+  function renderRouteLetters() {
+    routeWaypointsEl.querySelectorAll('.waypoint-row').forEach((row, i) => {
+      row.querySelector('.waypoint-letter').textContent = letterFor(i);
+    });
+  }
+
+  function addRouteWaypoint(prefillValue) {
+    const row = document.createElement('div');
+    row.className = 'waypoint-row';
+    row.innerHTML =
+      '<span class="waypoint-letter"></span>' +
+      '<input type="text" placeholder="Address" value="' + (prefillValue ? prefillValue.replace(/"/g, '&quot;') : '') + '" />' +
+      '<button type="button" class="waypoint-remove-btn" title="Remove stop">&times;</button>';
+    row.querySelector('.waypoint-remove-btn').addEventListener('click', () => {
+      if (routeWaypointsEl.children.length <= 2) return; // keep at least 2 stops
+      row.remove();
+      renderRouteLetters();
+    });
+    routeWaypointsEl.appendChild(row);
+    renderRouteLetters();
+  }
+
+  routeAddBtn.addEventListener('click', () => addRouteWaypoint(''));
+  addRouteWaypoint('');
+  addRouteWaypoint('');
+
   async function runRoute() {
-    const raw = routeInput.value.trim();
-    if (!raw) {
+    const addressLines = Array.from(routeWaypointsEl.querySelectorAll('input'))
+      .map(i => i.value.trim())
+      .filter(Boolean);
+    if (!addressLines.length) {
       setStatus('Enter at least one stop address.', true);
       return;
     }
-    if (technicians.length === 0) loadTechnicians();
+    if (technicians.length === 0) await loadTechnicians();
     if (technicians.length === 0) return;
 
-    const addressLines = raw.split('\n').map(l => l.trim()).filter(Boolean);
     await locateAndRender(addressLines, true, routeSearchBtn);
   }
 
@@ -2160,7 +2823,7 @@ function lookupGazetteer(input) {
   let scheduleLayers = []; // markers + lines drawn for the uploaded schedule, cleared on reset
 
   function setScheduleStatus(msg, isError) {
-    scheduleStatusEl.textContent = msg || '';
+    scheduleStatusEl.innerHTML = msg || '';
     scheduleStatusEl.classList.toggle('error', !!isError);
   }
 
@@ -2189,6 +2852,28 @@ function lookupGazetteer(input) {
     return order;
   }
 
+  function withJitteredDisplayCoords(stops) {
+    // Two different suites in the same building geocode to (near) identical lat/lon — their
+    // pins would sit exactly on top of each other, completely hiding one. Nudge duplicates
+    // apart for display only; all real distance/territory math still uses true coords.
+    // The offset scales with the route's overall span so it's actually visible whether the
+    // route covers one city block or several states.
+    const lats = stops.map(s => s.lat), lons = stops.map(s => s.lon);
+    const spanDeg = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lons) - Math.min(...lons), 0.05);
+    const baseRadius = Math.max(spanDeg * 0.08, 0.02); // at least ~2km, scales up for wider routes
+
+    const seen = {};
+    return stops.map(s => {
+      const key = s.lat.toFixed(4) + ',' + s.lon.toFixed(4);
+      const idx = seen[key] || 0;
+      seen[key] = idx + 1;
+      if (idx === 0) return { ...s, displayLat: s.lat, displayLon: s.lon };
+      const angle = idx * 2.4; // golden-angle-ish spiral so points fan out rather than stack
+      const radius = baseRadius * idx;
+      return { ...s, displayLat: s.lat + radius * Math.cos(angle), displayLon: s.lon + radius * Math.sin(angle) };
+    });
+  }
+
   function suggestTechniciansFor(loc) {
     const pool = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t) && t.available && t.lat != null);
     const order = { primary: 0, secondary: 1, outside: 2 };
@@ -2196,45 +2881,122 @@ function lookupGazetteer(input) {
       const dist = haversineMiles(loc.lat, loc.lon, t.lat, t.lon);
       const zone = classifyZoneMatch(t, loc.lat, loc.lon);
       return { t, dist, zone };
-    }).sort((a, b) => (order[a.zone.level] - order[b.zone.level]) || (a.dist - b.dist)).slice(0, 3);
+    }).sort((a, b) => (order[a.zone.level] - order[b.zone.level]) || (a.dist - b.dist)).slice(0, 1);
+  }
+
+  function bestTechnicianForRoute(stops) {
+    // "Best for the whole route": lowest total distance to every stop combined, with
+    // territory match (primary > secondary > outside) as the tie-breaker priority first.
+    const pool = technicians.filter(t => matchesFilters(t) && passesGroupVisibility(t) && t.available && t.lat != null);
+    const order = { primary: 0, secondary: 1, outside: 2 };
+    const scored = pool.map(t => {
+      let totalDist = 0;
+      let worstZone = { level: 'primary', label: '' };
+      stops.forEach(s => {
+        totalDist += haversineMiles(s.lat, s.lon, t.lat, t.lon);
+        const z = classifyZoneMatch(t, s.lat, s.lon);
+        if (order[z.level] > order[worstZone.level]) worstZone = z;
+      });
+      return { t, totalDist, worstZone };
+    });
+    scored.sort((a, b) => (order[a.worstZone.level] - order[b.worstZone.level]) || (a.totalDist - b.totalDist));
+    return scored[0] || null;
   }
 
   function clearScheduleLayers() {
-    scheduleLayers.forEach(l => map.removeLayer(l));
+    if (scheduleMapInstance) {
+      scheduleLayers.forEach(l => scheduleMapInstance.removeLayer(l));
+    }
     scheduleLayers = [];
   }
 
-  async function processScheduleFile(file) {
-    setScheduleStatus('Reading file…');
-    scheduleClearBtn.style.display = 'none';
+  let pendingScheduleRows = null; // parsed rows cached after file selection, reused when Process is clicked
+  const scheduleColumnPicker = document.getElementById('schedule-column-picker');
+  const scheduleDateColSelect = document.getElementById('schedule-date-col-select');
+  const scheduleAddrColSelect = document.getElementById('schedule-addr-col-select');
+
+  async function readScheduleFileHeaders(file) {
+    setScheduleStatus('<span class="spinner"></span>Reading file…');
+    scheduleColumnPicker.classList.remove('visible');
+    scheduleProcessBtn.disabled = true;
     try {
+      if (!/\.(csv|xlsx|xls)$/i.test(file.name)) {
+        throw new Error('"' + file.name + '" doesn\'t look like a spreadsheet (.csv, .xlsx, or .xls). Click "Remove file" below and choose a spreadsheet instead.');
+      }
+      if (typeof XLSX === 'undefined') {
+        throw new Error('The spreadsheet library failed to load (check your internet connection, then refresh the page and try again).');
+      }
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
       if (!rows.length) throw new Error('The file appears to be empty.');
 
+      pendingScheduleRows = rows;
       const header = rows[0];
-      let dateCol = findColumn(header, ['date']);
-      let addrCol = findColumn(header, ['address', 'location', 'site', 'job']);
-      if (dateCol === -1) dateCol = 0;
-      if (addrCol === -1) addrCol = (dateCol === 1 ? 0 : 1);
+      let guessedDateCol = findColumn(header, ['date']);
+      // "address" is a much stronger signal than "location"/"site"/"job" — try it alone first,
+      // so a sheet with both a "Location" (name) and "Address" (street) column picks the real one.
+      let guessedAddrCol = findColumn(header, ['address']);
+      if (guessedAddrCol === -1) guessedAddrCol = findColumn(header, ['location', 'site', 'job']);
+      if (guessedDateCol === -1) guessedDateCol = 0;
+      if (guessedAddrCol === -1) guessedAddrCol = (guessedDateCol === 1 ? 0 : 1);
+
+      const optionsHTML = header.map((h, i) => '<option value="' + i + '">' + (h || '(column ' + (i + 1) + ')') + '</option>').join('');
+      scheduleDateColSelect.innerHTML = optionsHTML;
+      scheduleAddrColSelect.innerHTML = optionsHTML;
+      scheduleDateColSelect.value = guessedDateCol;
+      scheduleAddrColSelect.value = guessedAddrCol;
+
+      scheduleColumnPicker.classList.add('visible');
+      scheduleProcessBtn.disabled = false;
+      setScheduleStatus('Found ' + (rows.length - 1) + ' row(s). Confirm the columns below, then click "Process schedule."'
+        + (header.filter(h => String(h || '').toLowerCase().includes('date')).length > 1
+          ? ' (Note: your file has multiple date-like columns — double-check which one is selected.)'
+          : ''));
+    } catch (err) {
+      pendingScheduleRows = null;
+      setScheduleStatus('Could not read file: ' + err.message, true);
+    }
+  }
+
+  async function processScheduleFile() {
+    if (!pendingScheduleRows) {
+      setScheduleStatus('Choose a file first.', true);
+      return;
+    }
+    setScheduleStatus('<span class="spinner"></span>Locating addresses…');
+    scheduleClearBtn.style.display = 'none';
+    scheduleProcessBtn.disabled = true;
+    try {
+      const rows = pendingScheduleRows;
+      const dateCol = parseInt(scheduleDateColSelect.value, 10);
+      const addrCol = parseInt(scheduleAddrColSelect.value, 10);
+      const groupingMode = document.querySelector('input[name="schedule-grouping"]:checked').value; // 'date' | 'all'
+
+      // Spreadsheet address cells often span multiple lines (street / unit / city-state-zip each
+      // on their own line within one cell) — the geocoder needs that as one comma-separated line.
+      const cleanAddress = (raw) => String(raw || '')
+        .replace(/[\r\n]+/g, ', ')
+        .replace(/,\s*,/g, ',')
+        .replace(/\s+/g, ' ')
+        .trim();
 
       const jobs = rows.slice(1)
-        .map(r => ({ date: String(r[dateCol] || '').trim(), address: String(r[addrCol] || '').trim() }))
+        .map(r => ({ date: String(r[dateCol] || '').trim(), address: cleanAddress(r[addrCol]) }))
         .filter(j => j.address);
 
-      if (!jobs.length) throw new Error('No rows with an address were found.');
+      if (!jobs.length) throw new Error('No rows with an address were found in the selected address column.');
 
       setScheduleStatus('<span class="spinner"></span>Locating ' + jobs.length + ' address(es)…');
 
       const byDate = {};
       for (const j of jobs) {
-        const key = j.date || '(no date given)';
+        const key = groupingMode === 'all' ? 'All stops (one route)' : (j.date || '(no date given)');
         if (!byDate[key]) byDate[key] = [];
         try {
-          const loc = await resolveOneAddress(j.address);
-          byDate[key].push({ ...loc, label: j.address });
+          const loc = await resolveAddressWithFallback(j.address);
+          byDate[key].push({ ...loc, label: j.address + (loc.approximate ? ' (approximate location — city/zip only)' : '') });
         } catch (e) {
           byDate[key].push({ lat: null, lon: null, label: j.address, failed: true });
         }
@@ -2243,15 +3005,55 @@ function lookupGazetteer(input) {
       renderScheduleResults(byDate);
       setScheduleStatus(jobs.length + ' job(s) across ' + Object.keys(byDate).length + ' date(s) processed.');
       scheduleClearBtn.style.display = 'block';
+      scheduleViewMapBtn.style.display = 'block';
     } catch (err) {
       setScheduleStatus('Could not process file: ' + err.message, true);
+    } finally {
+      scheduleProcessBtn.disabled = false;
     }
   }
 
+  let scheduleMapInstance = null;
+  const scheduleMapModal = document.getElementById('schedule-map-modal');
+  const scheduleMapSidebar = document.getElementById('schedule-map-sidebar');
+  const scheduleMapClose = document.getElementById('schedule-map-close');
+
+  function getScheduleMap() {
+    if (!scheduleMapInstance) {
+      scheduleMapInstance = L.map('schedule-map', { zoomControl: true }).setView([39.5, -98.35], 4);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '&copy; Esri'
+      }).addTo(scheduleMapInstance);
+    }
+    return scheduleMapInstance;
+  }
+
+  let scheduleMapPendingBounds = null; // stored bounds to apply once the modal is actually visible
+
+  function openScheduleMapModal() {
+    scheduleMapModal.classList.add('open');
+    const m = getScheduleMap();
+    setTimeout(() => {
+      m.invalidateSize(); // modal was just made visible; Leaflet needs a size recheck first
+      if (scheduleMapPendingBounds && scheduleMapPendingBounds.length > 1) {
+        m.fitBounds(scheduleMapPendingBounds, { padding: [30, 30] });
+      } else if (scheduleMapPendingBounds && scheduleMapPendingBounds.length === 1) {
+        m.setView(scheduleMapPendingBounds[0], 11);
+      }
+    }, 60);
+  }
+
+  scheduleMapClose.addEventListener('click', () => {
+    scheduleMapModal.classList.remove('open');
+  });
+
   function renderScheduleResults(byDate) {
-    clearMarkers();
     clearScheduleLayers();
     listEl.innerHTML = '';
+    scheduleMapSidebar.innerHTML = '';
+    const smap = getScheduleMap();
+    smap.eachLayer(l => { if (!(l instanceof L.TileLayer)) smap.removeLayer(l); });
 
     const note = document.createElement('div');
     note.style.cssText = 'padding:8px 20px;font-size:11px;color:var(--ink-soft);border-bottom:1px solid var(--line);background:#fdf3e3;';
@@ -2260,25 +3062,16 @@ function lookupGazetteer(input) {
 
     const allBounds = [];
     let colorIdx = 0;
+    let globalStopNum = 0; // continuous numbering across every date group, so "Stop 3" always means the same thing
 
     Object.keys(byDate).forEach(dateKey => {
       const stops = byDate[dateKey].filter(s => s.lat != null);
       const failedStops = byDate[dateKey].filter(s => s.lat == null);
-      if (!stops.length) return;
-
-      const ordered = stops.length > 1 ? nearestNeighborOrder(stops) : stops;
-      let totalMiles = 0;
-      for (let i = 0; i < ordered.length - 1; i++) {
-        totalMiles += haversineMiles(ordered[i].lat, ordered[i].lon, ordered[i + 1].lat, ordered[i + 1].lon);
-      }
-
-      const dateColor = GROUP_PALETTE[colorIdx % GROUP_PALETTE.length];
-      colorIdx++;
 
       const dateHeader = document.createElement('div');
       dateHeader.className = 'schedule-date-header';
-      dateHeader.innerHTML = dateKey + (ordered.length > 1
-        ? ' <span class="schedule-date-total">&middot; ' + ordered.length + ' stops, ' + totalMiles.toFixed(1) + ' mi optimized route</span>'
+      dateHeader.innerHTML = dateKey + (stops.length > 1
+        ? ' <span class="schedule-date-total">&middot; ' + stops.length + ' stop(s)</span>'
         : '');
       listEl.appendChild(dateHeader);
 
@@ -2289,63 +3082,367 @@ function lookupGazetteer(input) {
         listEl.appendChild(warn);
       }
 
-      const latlngs = ordered.map(s => [s.lat, s.lon]);
-      allBounds.push(...latlngs);
+      if (!stops.length) return; // nothing to plot for this group, but the warning above already explains why
 
-      if (ordered.length > 1) {
-        const line = L.polyline(latlngs, { color: dateColor, weight: 2.5, opacity: 0.75, dashArray: '6,6' }).addTo(map);
-        scheduleLayers.push(line);
+      const ordered = withJitteredDisplayCoords(stops.length > 1 ? nearestNeighborOrder(stops) : stops);
+      const stopNumbers = ordered.map(() => ++globalStopNum);
+      let totalMiles = 0;
+      for (let i = 0; i < ordered.length - 1; i++) {
+        totalMiles += haversineMiles(ordered[i].lat, ordered[i].lon, ordered[i + 1].lat, ordered[i + 1].lon);
       }
 
+      const dateColor = SCHEDULE_ROUTE_PALETTE[colorIdx % SCHEDULE_ROUTE_PALETTE.length];
+      colorIdx++;
+
+      if (ordered.length > 1) {
+        const totalLine = document.createElement('div');
+        totalLine.style.cssText = 'padding:2px 20px 6px;font-size:11px;color:var(--ink-soft);';
+        totalLine.textContent = totalMiles.toFixed(1) + ' mi optimized route across ' + ordered.length + ' stops';
+        listEl.appendChild(totalLine);
+      }
+
+      const bestForRoute = bestTechnicianForRoute(ordered);
+      if (bestForRoute) {
+        const bestCard = document.createElement('div');
+        bestCard.style.cssText = 'padding:8px 20px;background:#eef4f8;border-bottom:1px solid var(--line);font-size:12px;';
+        bestCard.innerHTML =
+          '<b>\u2605 Best overall for this route:</b> ' + bestForRoute.t.name +
+          ' — ' + bestForRoute.totalDist.toFixed(1) + ' total mi to all stops &middot; ' +
+          '<span class="zone-badge zone-' + bestForRoute.worstZone.level + '" style="margin-top:0;">' + bestForRoute.worstZone.label + '</span>';
+        listEl.appendChild(bestCard);
+      }
+
+      // Does the overall-best tech actually cover every stop, or are some out of their territory?
+      const perStopBest = ordered.map(stop => suggestTechniciansFor(stop)[0]);
+      let coverageHTML = '';
+      if (bestForRoute) {
+        const perStopZoneForBest = ordered.map(stop => classifyZoneMatch(bestForRoute.t, stop.lat, stop.lon));
+        const outsideStops = ordered.map((stop, i) => ({ stop, zone: perStopZoneForBest[i] })).filter(x => x.zone.level === 'outside');
+        const secondaryCount = perStopZoneForBest.filter(z => z.level === 'secondary').length;
+
+        if (outsideStops.length === 0 && secondaryCount === 0) {
+          coverageHTML = '<div class="sms-verdict ok"><span class="sms-verdict-icon">\u2713</span><span>' + bestForRoute.t.name + ' can cover all ' + ordered.length + ' stop(s) — all within primary territory.</span></div>';
+        } else if (outsideStops.length === 0) {
+          coverageHTML = '<div class="sms-verdict partial"><span class="sms-verdict-icon">\u2713</span><span>' + bestForRoute.t.name + ' can cover all ' + ordered.length + ' stop(s), but ' + secondaryCount + ' fall in secondary territory (trip fee likely).</span></div>';
+        } else {
+          coverageHTML = '<div class="sms-verdict bad"><span class="sms-verdict-icon">\u26A0</span><span>' + bestForRoute.t.name + ' cannot fully cover this route — ' + outsideStops.length + ' of ' + ordered.length + ' stop(s) are outside their territory. See alternates below.</span></div>';
+        }
+      }
+
+      const stopsHTML = ordered.map((stop, i) => {
+        const best = perStopBest[i];
+        return '<div class="sms-stop"><div class="sms-stop-num">' + stopNumbers[i] + '</div><div class="sms-stop-body">' +
+          '<div class="sms-stop-name">' + stop.label + '</div>' +
+          (best
+            ? '<div class="sms-stop-tech"><b>' + best.t.name + '</b> &middot; ' + best.dist.toFixed(1) + ' mi<br/><span class="zone-badge zone-' + best.zone.level + '" style="margin-top:2px;">' + best.zone.label + '</span></div>'
+            : '<div class="sms-stop-tech">No matching technician found</div>') +
+          '</div></div>';
+      }).join('');
+
+      const groupPanel = document.createElement('div');
+      groupPanel.className = 'sms-group';
+      groupPanel.innerHTML = '<div class="sms-group-title">' + dateKey + '</div>' + coverageHTML + stopsHTML;
+      scheduleMapSidebar.appendChild(groupPanel);
+
+      const FAR_APART_THRESHOLD_MI = 250;
+      const legMilesList = [];
+      for (let i = 0; i < ordered.length - 1; i++) {
+        legMilesList.push(haversineMiles(ordered[i].lat, ordered[i].lon, ordered[i + 1].lat, ordered[i + 1].lon));
+      }
+      const anyFarLeg = legMilesList.some(d => d > FAR_APART_THRESHOLD_MI);
+      if (anyFarLeg) {
+        const farWarn = document.createElement('div');
+        farWarn.style.cssText = 'padding:8px 20px;background:var(--unavailable-bg);color:var(--unavailable);border-bottom:1px solid var(--line);font-size:12px;font-weight:600;';
+        farWarn.textContent = '\u26A0 This route has a leg over ' + FAR_APART_THRESHOLD_MI + ' mi — consider splitting it into two separate routes/visits instead of one trip.';
+        listEl.appendChild(farWarn);
+      }
+
+      const latlngs = ordered.map(s => [s.displayLat, s.displayLon]);
+      allBounds.push(...latlngs);
+
+      // Draw each leg as its own segment so a too-far leg can be colored differently, plus a
+      // mileage label at its midpoint — both directly on the popup map, not just the sidebar.
+      for (let i = 0; i < ordered.length - 1; i++) {
+        const legMiles = legMilesList[i];
+        const isFarLeg = legMiles > FAR_APART_THRESHOLD_MI;
+        const segColor = isFarLeg ? '#b3555b' : dateColor;
+        const seg = L.polyline([latlngs[i], latlngs[i + 1]], {
+          color: segColor, weight: isFarLeg ? 4 : 3, opacity: 0.85, dashArray: isFarLeg ? '8,6' : null
+        }).addTo(smap);
+        scheduleLayers.push(seg);
+
+        const midLat = (latlngs[i][0] + latlngs[i + 1][0]) / 2;
+        const midLon = (latlngs[i][1] + latlngs[i + 1][1]) / 2;
+        const legLabelText = legMiles < 0.5 ? 'same complex' : legMiles.toFixed(1) + ' mi';
+        const legLabel = L.marker([midLat, midLon], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="background:' + (isFarLeg ? '#b3555b' : '#2c3644') + ';color:#fff;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:100px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3);">' +
+              (isFarLeg ? '\u26A0 ' : '') + legLabelText + '</div>',
+            iconSize: [80, 20],
+            iconAnchor: [40, 10]
+          })
+        }).addTo(smap);
+        scheduleLayers.push(legLabel);
+      }
+
+      const FAR_APART_LABEL_MI = FAR_APART_THRESHOLD_MI;
       ordered.forEach((stop, i) => {
-        const marker = L.marker([stop.lat, stop.lon], { icon: pinIcon(i + 1, dateColor) }).addTo(map);
-        marker.bindPopup('<b>' + dateKey + ' — Stop ' + (i + 1) + '</b>' + stop.label);
+        const best = perStopBest[i];
+        const num = stopNumbers[i];
+        const marker = L.marker([stop.displayLat, stop.displayLon], { icon: pinIcon(num, dateColor) }).addTo(smap);
+        marker.bindPopup('<b>Stop ' + num + '</b><br/>' + stop.label);
         scheduleLayers.push(marker);
 
+        const legMiles = i === 0 ? null : legMilesList[i - 1];
+        const isFar = legMiles != null && legMiles > FAR_APART_LABEL_MI;
+        const isNegligible = legMiles != null && legMiles < 0.5;
+        const legText = legMiles == null ? '' : (isNegligible ? 'Same building/complex as previous stop' : legMiles.toFixed(1) + ' mi from previous stop');
         const card = document.createElement('div');
         card.className = 'schedule-stop-card';
-        const legText = i === 0 ? '' : haversineMiles(ordered[i - 1].lat, ordered[i - 1].lon, stop.lat, stop.lon).toFixed(1) + ' mi from previous stop';
-        const suggestions = suggestTechniciansFor(stop);
         card.innerHTML =
-          '<div class="schedule-stop-top"><span>Stop ' + (i + 1) + ': ' + stop.label + '</span></div>' +
-          (legText ? '<div class="schedule-stop-leg">' + legText + '</div>' : '') +
-          (suggestions.length
-            ? suggestions.map((s, rank) =>
-                '<div class="schedule-suggestion"><span class="s-rank">#' + (rank + 1) + '</span>' + s.t.name +
-                ' — ' + s.dist.toFixed(1) + ' mi &middot; <span class="zone-badge zone-' + s.zone.level + '" style="margin-top:0;">' + s.zone.label + '</span></div>'
-              ).join('')
+          '<div class="schedule-stop-top"><span>Stop ' + num + ': ' + stop.label + '</span></div>' +
+          (legText ? '<div class="schedule-stop-leg' + (isFar ? ' far-apart' : '') + '">' +
+            (isFar ? '\u26A0 ' : '') + legText + (isFar ? ' — over ' + FAR_APART_LABEL_MI + ' mi, consider splitting into separate trips' : '') +
+            '</div>' : '') +
+          (best
+            ? '<div class="schedule-suggestion"><span class="s-rank">Best pick</span>' + best.t.name +
+              ' — ' + best.dist.toFixed(1) + ' mi &middot; <span class="zone-badge zone-' + best.zone.level + '" style="margin-top:0;">' + best.zone.label + '</span></div>'
             : '<div class="schedule-suggestion">No active technicians match current filters for this stop.</div>');
         listEl.appendChild(card);
       });
     });
 
-    if (allBounds.length > 1) map.fitBounds(allBounds, { padding: [40, 40] });
-    else if (allBounds.length === 1) map.setView(allBounds[0], 11);
+    scheduleMapPendingBounds = allBounds;
+    if (allBounds.length) openScheduleMapModal();
   }
 
   scheduleFileInput.addEventListener('change', () => {
     const file = scheduleFileInput.files[0];
-    if (file) processScheduleFile(file);
+    if (file) {
+      scheduleRemoveFileBtn.style.display = 'inline-block';
+      readScheduleFileHeaders(file);
+    } else {
+      scheduleRemoveFileBtn.style.display = 'none';
+      pendingScheduleRows = null;
+      scheduleColumnPicker.classList.remove('visible');
+      scheduleProcessBtn.disabled = true;
+      setScheduleStatus('');
+    }
   });
 
-  scheduleClearBtn.addEventListener('click', () => {
+  scheduleProcessBtn.addEventListener('click', () => {
+    processScheduleFile();
+  });
+
+  function resetScheduleUpload() {
     clearScheduleLayers();
     scheduleFileInput.value = '';
+    scheduleRemoveFileBtn.style.display = 'none';
+    pendingScheduleRows = null;
+    scheduleColumnPicker.classList.remove('visible');
+    scheduleProcessBtn.disabled = true;
     setScheduleStatus('');
     scheduleClearBtn.style.display = 'none';
+    scheduleViewMapBtn.style.display = 'none';
+  }
+
+  scheduleRemoveFileBtn.addEventListener('click', resetScheduleUpload);
+  scheduleViewMapBtn.addEventListener('click', openScheduleMapModal);
+
+  scheduleClearBtn.addEventListener('click', () => {
+    if (!confirm('Clear this processed schedule and its route map? This can\'t be undone.')) return;
+    resetScheduleUpload();
+    scheduleBoxEl.classList.remove('visible');
+    scheduleToggleBtn.classList.remove('active');
     rebuildGroupColors();
     refreshMapAndList();
   });
+
+  // ---- Mileage calculator ----
+  let mileageInitialized = false;
+  let mileageWaypointCount = 0;
+  let mileageLayers = []; // markers/lines drawn for the mileage calculator, cleared on recalculation
+
+  const mileageWaypointsEl = document.getElementById('mileage-waypoints');
+  const mileageAddBtn = document.getElementById('mileage-add-btn');
+  const mileageCalcBtn = document.getElementById('mileage-calc-btn');
+  const mileageStatusEl = document.getElementById('mileage-status');
+  const mileageResultsEl = document.getElementById('mileage-results');
+
+  function letterFor(i) {
+    // A, B, C ... Z, AA, AB ... (handles more than 26 stops gracefully)
+    let s = '';
+    i = i + 1;
+    while (i > 0) {
+      const rem = (i - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      i = Math.floor((i - 1) / 26);
+    }
+    return s;
+  }
+
+  function renderMileageLetters() {
+    mileageWaypointsEl.querySelectorAll('.waypoint-row').forEach((row, i) => {
+      row.querySelector('.waypoint-letter').textContent = letterFor(i);
+    });
+  }
+
+  function addMileageWaypoint(prefillValue) {
+    mileageWaypointCount++;
+    const row = document.createElement('div');
+    row.className = 'waypoint-row';
+    row.innerHTML =
+      '<span class="waypoint-letter"></span>' +
+      '<input type="text" placeholder="Address" value="' + (prefillValue ? prefillValue.replace(/"/g, '&quot;') : '') + '" />' +
+      '<button type="button" class="waypoint-remove-btn" title="Remove stop">&times;</button>';
+    row.querySelector('.waypoint-remove-btn').addEventListener('click', () => {
+      if (mileageWaypointsEl.children.length <= 2) return; // keep at least 2 stops
+      row.remove();
+      renderMileageLetters();
+    });
+    mileageWaypointsEl.appendChild(row);
+    renderMileageLetters();
+  }
+
+  function initMileageCalculator() {
+    mileageInitialized = true;
+    addMileageWaypoint('');
+    addMileageWaypoint('');
+  }
+
+  mileageAddBtn.addEventListener('click', () => addMileageWaypoint(''));
+
+  function setMileageStatus(msg, isError) {
+    mileageStatusEl.textContent = msg || '';
+    mileageStatusEl.classList.toggle('error', !!isError);
+  }
+
+  function clearMileageLayers() {
+    mileageLayers.forEach(l => map.removeLayer(l));
+    mileageLayers = [];
+  }
+
+  async function fetchDrivingRoute(locs) {
+    // Real road-network mileage via OSRM's public routing API (free, no key). Falls back to
+    // straight-line distance per leg if the routing service is unavailable.
+    const coordStr = locs.map(l => l.lon + ',' + l.lat).join(';');
+    const url = 'https://router.project-osrm.org/route/v1/driving/' + coordStr + '?overview=full&geometries=geojson';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('routing service unavailable');
+    const data = await res.json();
+    if (data.code !== 'Ok' || !data.routes || !data.routes.length) throw new Error('no route found');
+    const route = data.routes[0];
+    return {
+      legMiles: route.legs.map(leg => leg.distance / 1609.34),
+      totalMiles: route.distance / 1609.34,
+      geometry: route.geometry.coordinates.map(c => [c[1], c[0]]) // GeoJSON is [lon,lat] -> Leaflet wants [lat,lon]
+    };
+  }
+
+  async function calculateMileage() {
+    const inputs = Array.from(mileageWaypointsEl.querySelectorAll('input'));
+    const addresses = inputs.map(i => i.value.trim());
+    if (addresses.some(a => !a)) {
+      setMileageStatus('Fill in every stop before calculating.', true);
+      return;
+    }
+
+    setMileageStatus('<span class="spinner"></span>Locating stops…');
+    mileageCalcBtn.disabled = true;
+    mileageResultsEl.innerHTML = '';
+    clearMileageLayers();
+    clearMarkers();
+
+    try {
+      const locs = [];
+      for (const addr of addresses) {
+        locs.push({ ...(await resolveOneAddress(addr)), label: addr });
+      }
+
+      setMileageStatus('<span class="spinner"></span>Calculating route…');
+
+      let legMiles, totalMiles, geometry;
+      let usedFallback = false;
+      try {
+        const result = await fetchDrivingRoute(locs);
+        legMiles = result.legMiles;
+        totalMiles = result.totalMiles;
+        geometry = result.geometry;
+      } catch (routingErr) {
+        usedFallback = true;
+        legMiles = [];
+        for (let i = 0; i < locs.length - 1; i++) {
+          legMiles.push(haversineMiles(locs[i].lat, locs[i].lon, locs[i + 1].lat, locs[i + 1].lon));
+        }
+        totalMiles = legMiles.reduce((a, b) => a + b, 0);
+        geometry = locs.map(l => [l.lat, l.lon]);
+      }
+
+      // Draw lettered pins + route line on the main map
+      locs.forEach((loc, i) => {
+        const marker = L.marker([loc.lat, loc.lon], { icon: pinIcon(letterFor(i), '#3d5a80') }).addTo(map);
+        marker.bindPopup('<b>' + letterFor(i) + '</b>' + loc.label);
+        mileageLayers.push(marker);
+      });
+      const line = L.polyline(geometry, { color: '#3d5a80', weight: 3.5, opacity: 0.8 }).addTo(map);
+      mileageLayers.push(line);
+      map.fitBounds(line.getBounds(), { padding: [40, 40] });
+
+      mileageResultsEl.innerHTML = '';
+      for (let i = 0; i < legMiles.length; i++) {
+        const row = document.createElement('div');
+        row.className = 'mileage-leg-row';
+        row.innerHTML =
+          '<span class="leg-label">' + letterFor(i) + ' &rarr; ' + letterFor(i + 1) + '</span>' +
+          '<span class="leg-dist">' + legMiles[i].toFixed(1) + ' mi</span>';
+        mileageResultsEl.appendChild(row);
+      }
+      const totalRow = document.createElement('div');
+      totalRow.className = 'mileage-total-row';
+      totalRow.innerHTML = '<span>Total</span><span>' + totalMiles.toFixed(1) + ' mi</span>';
+      mileageResultsEl.appendChild(totalRow);
+
+      setMileageStatus(usedFallback ? 'Routing service unavailable — showing straight-line distance estimates instead of driving mileage.' : '', usedFallback);
+    } catch (err) {
+      setMileageStatus('Could not calculate mileage: ' + err.message, true);
+    } finally {
+      mileageCalcBtn.disabled = false;
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (scheduleMapModal.classList.contains('open')) { scheduleMapModal.classList.remove('open'); return; }
+      if (selectedTechPanel.classList.contains('open')) {
+        selectedTechPanel.classList.remove('open');
+        territoryLayers.forEach(l => map.removeLayer(l));
+        territoryLayers = [];
+        document.querySelectorAll('.tech-card').forEach(c => c.classList.remove('selected-card'));
+        refreshMapAndList();
+      }
+      return;
+    }
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      addressInput.focus();
+    }
+  });
+
+  mileageCalcBtn.addEventListener('click', calculateMileage);
 
   searchBtn.addEventListener('click', runSearch);
   addressInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
   routeSearchBtn.addEventListener('click', runRoute);
 
-  // Initial load: use saved data (cached geocodes, or the embedded Confluence snapshot the first time)
-  loadTechnicians();
+  // Initial load: tries technicians-data.json first (live Confluence sync output), falls
+  // back to the embedded offline snapshot if that's not available.
+  await loadTechnicians();
   rebuildGroupColors();
   refreshMapAndList();
   const initialPts = technicians.filter(t => t.lat != null).map(t => [t.lat, t.lon]);
   if (initialPts.length > 1) map.fitBounds(initialPts, { padding: [40, 40] });
 })();
 </script>
+</body>
+</html>
